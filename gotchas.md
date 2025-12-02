@@ -6,6 +6,24 @@ This file tracks cases where official Eiffel documentation differs from actual c
 
 ---
 
+## EIFGENs Directory - Hands Off!
+
+**NEVER modify files in EIFGENs** - this is EiffelStudio's workspace exclusively.
+
+- **Read-only for everyone** (human and AI alike)
+- Any modifications risk corrupting the build
+- Segmentation faults on startup often indicate corrupted EIFGENs
+- **Solution for segfaults**: Clean compile (`-clean` flag)
+
+```batch
+:: Clean compile to fix corrupted EIFGENs
+ec.exe -batch -config project.ecf -target my_target -c_compile -freeze -clean
+```
+
+**Verified**: 2025-12-02, EiffelStudio 25.02
+
+---
+
 ## Format
 
 Each entry follows this structure:

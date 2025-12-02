@@ -256,10 +256,16 @@ When wearing a hat, Claude will:
 - Measure improvement with data, not intuition
 - Finalized builds give more accurate timing than workbench
 
+**Recommended Setup**: Create a dedicated `<app>_profile` target with:
+- `profile="true"` on `<option>`
+- A profile harness app (exercises code paths, non-interactive)
+- Inlining disabled: `<setting name="inlining" value="false"/>`
+- See `profiler.md` for detailed pattern and `wms_profile_app.e` for example
+
 **Workflow** (requires EiffelStudio GUI for full analysis):
-1. Enable profiling in ECF: `<setting name="profile" value="true"/>`
-2. Recompile (freeze or finalize recommended)
-3. Run the instrumented executable (generates `profinfo` in W_CODE or F_CODE)
+1. Create dedicated profile target with harness app
+2. Finalize compile (frozen mode may not generate profinfo via batch)
+3. Run the instrumented executable (generates `profinfo_XX` in F_CODE)
 4. Use EiffelStudio Profiler Wizard to convert `profinfo` to `.pfi`
 5. Analyze: calls, self-time, descendant-time, percentages
 6. Identify bottlenecks and apply Performance Hat for optimization
@@ -272,18 +278,19 @@ When wearing a hat, Claude will:
 - **Percentage**: Proportion of total execution time
 
 **Files Generated**:
-- `profinfo` - Raw profiling data (binary format)
+- `profinfo_XX` - Raw profiling data (binary, suffix varies: _AC, _C4, etc.)
 - `profinfo.pfi` - Converted execution profile for analysis
-- Located in: `EIFGENs/<target>/W_CODE/` or `F_CODE/`
+- Located in: `EIFGENs/<target>/F_CODE/` (finalized)
 
 **Limitations**:
 - Full profiler analysis requires EiffelStudio GUI (Profiler Wizard)
-- ec.exe `-loop` mode has a `(P) Profile` menu but is limited
-- Claude cannot directly invoke the profiler wizard from command line
+- AutoTest does NOT generate useful profinfo - use dedicated harness app
+- **Shallow call tree issue (ES 25.02)**: Profiler may only show root class features, not called classes - under investigation
 - Profiling adds overhead; use finalized builds for accurate relative timing
+- **Segfaults on startup**: Usually indicates corrupted EIFGENs - do a clean compile (`-clean` flag)
 
 **Checklist**:
-- [ ] Profiling enabled in ECF (`<setting name="profile" value="true"/>`)
+- [ ] Profiling enabled in ECF (`profile="true"` on `<option>` element)
 - [ ] System recompiled with profiling
 - [ ] Representative workload executed
 - [ ] `profinfo` file generated
@@ -423,6 +430,8 @@ Claude will adapt the focused approach to your specific need.
 
 | Date | Change |
 |------|--------|
+| 2025-12-02 | Profiler Hat: Segfaults usually mean corrupted EIFGENs - use clean compile |
+| 2025-12-02 | Profiler Hat: Corrected ECF syntax (`profile="true"` on `<option>`, not `<setting>`) |
 | 2025-12-02 | Added SCOOP hat for concurrency analysis and implementation |
 | 2025-12-02 | Added Profiler hat for performance profiling work |
 | 2025-12-02 | Removed Bug Hunting hat (covered by Testing + Contracting), added Mock Building hat |
