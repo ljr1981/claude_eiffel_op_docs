@@ -1,79 +1,125 @@
 # Claude Context File - READ FIRST
 
-**Purpose**: This file provides essential context for Claude at the start of each new conversation. Read this file before writing any Eiffel code.
+**Purpose**: This file provides essential context for Claude when working on any Eiffel project. Read this file before writing any Eiffel code.
 
 ---
 
-## Critical Corrections (Compiler-Verified)
+## Session Startup Protocol
 
-### Across Loops
-- Status: UNDER INVESTIGATION
-- Official docs say `ic.item` accesses elements
-- User reports needing to remove `.item` in practice
-- **Action**: When writing across loops, be prepared for corrections and document findings
+**At the start of each Eiffel session, Claude should:**
 
-```eiffel
--- Official syntax (may need adjustment):
-across my_list as ic loop
-    print (ic.item)
-end
+1. **Read this file** for general Eiffel knowledge
+2. **Ask which project** we're working on (if not obvious)
+3. **Look for ROADMAP.md** in the project root - this contains project-specific context
+4. **If no ROADMAP.md exists**, offer to create one
+
+---
+
+## ROADMAP.md Convention
+
+Each Eiffel project should have a `ROADMAP.md` in its root directory containing:
+
+```markdown
+# Project Name - Roadmap
+
+## Project Overview
+Brief description of what this project is.
+
+## Current Status
+What state is the project in? (active development, maintenance, stable, etc.)
+
+## Dependencies
+- Library dependencies and versions
+- External tools required
+
+## Build & Test Commands
+- How to compile
+- How to run tests
+
+## Current Focus
+What are we working on right now?
+
+## Backlog / Future Work
+Items to address later.
+
+## Session Notes
+Temporary notes for current work session.
 ```
 
 ---
 
-## Project Context
+## General Eiffel Knowledge
 
-- Main repository: `D:\prod\simple_sql`
-- SQLite wrapper: `D:\prod\eiffel_sqlite_2025` (v1.0.0, SQLite 3.51.1 with FTS5)
-- Reference docs: `D:\prod\reference_docs\`
-- User has hands-on Eiffel experience and compiler access
-- Trust compiler errors over documentation when conflicts arise
-- **Important**: simple_sql depends on eiffel_sqlite_2025 v1.0.0+ for FTS5 and modern SQLite features
+### Compiler Access
+
+Claude can compile and test Eiffel projects via command line:
+
+```batch
+:: Compile (freeze with C compilation)
+ec.exe -batch -config "project.ecf" -target target_name -c_compile -freeze
+
+:: Run tests
+ec.exe -batch -config "project.ecf" -target target_name -tests
+
+:: Clean rebuild
+ec.exe -batch -config "project.ecf" -target target_name -c_compile -freeze -clean
+```
+
+### Assertion Configuration in ECF
+
+```xml
+<option warning="warning">
+    <assertions precondition="true" postcondition="true" check="true"
+                invariant="true" loop="true" supplier_precondition="true"/>
+</option>
+```
+
+### Contract Priority Order
+
+When reviewing or adding contracts, work in this order:
+1. **Class invariants** - What's always true about objects of this class?
+2. **Loop invariants/variants** - Loop correctness and termination
+3. **Check assertions** - Internal sanity checks within routines
+4. **Preconditions/Postconditions** - Caller/callee guarantees
 
 ---
 
 ## Working Relationship
 
-1. Claude writes code based on current knowledge
-2. User compiles and tests
+1. Claude writes code based on current knowledge + these reference docs
+2. User compiles and tests (or Claude compiles via ec.exe -batch)
 3. Errors are debugged collaboratively
 4. Learnings are captured in this reference folder
 5. Both benefit in future conversations
 
+**Key principle**: Trust compiler errors over documentation when conflicts arise.
+
 ---
 
-## Key Files to Check
+## Reference Files
 
 | File | Contents |
 |------|----------|
-| `HATS.md` | Focused work modes - tell Claude which "hat" to wear for specific tasks |
-| `gotchas.md` | Known doc-vs-reality conflicts (including EIS annotations) |
-| `across_loops.md` | Iteration patterns |
-| `scoop.md` | SCOOP concurrency model - separate keyword, processors, wait conditions |
-| `profiler.md` | EiffelStudio profiler usage and configuration |
-| `patterns.md` | Verified working code |
+| `HATS.md` | Focused work modes ("hats") for specific tasks |
+| `gotchas.md` | Generic Eiffel doc-vs-reality conflicts |
+| `sqlite_gotchas.md` | SQLite/database-specific gotchas |
+| `across_loops.md` | Iteration patterns and cursor behavior |
+| `scoop.md` | SCOOP concurrency model |
+| `profiler.md` | EiffelStudio profiler usage |
+| `patterns.md` | Verified working code patterns |
 
 ---
 
-## Operational Notes
-
-**Always read this reference documentation** when starting work on any Eiffel project. Key capabilities:
-
-1. **Compilation**: Can compile via `ec.exe -batch` command line
-2. **Testing**: Can run tests via `ec.exe -batch ... -tests`
-3. **Profiling**: Can enable profiling in ECF, but full analysis requires EiffelStudio GUI
-4. **SCOOP**: Can implement concurrency using `separate` keyword (see `scoop.md`)
-
 ## EIS (Eiffel Information System) Quick Reference
 
-When adding documentation to Eiffel classes:
-```eiffel
-note
-    EIS: "name=API Reference", "src=../docs/api/myclass.html", "protocol=URI", "tag=documentation"
-```
+Bidirectional linking between Eiffel source and external documentation:
 
-HTML links back to EiffelStudio:
-```html
+```eiffel
+-- Outgoing link (source → docs):
+note
+    EIS: "name=API Reference", "src=../docs/api.html", "protocol=URI", "tag=documentation"
+
+-- Incoming link (docs → source) in HTML:
 <a href="eiffel:?class=MY_CLASS&feature=my_feature">View Source</a>
 ```
 
@@ -83,9 +129,7 @@ HTML links back to EiffelStudio:
 
 | Date | Change |
 |------|--------|
-| 2025-12-02 | Added profiler.md reference, expanded scoop.md with comprehensive docs |
-| 2025-12-02 | Added Operational Notes section with compilation/testing capabilities |
-| 2025-12-01 | Added EIS (Eiffel Information System) documentation patterns |
-| 2025-11-30 | Added eiffel_sqlite_2025 dependency, SQLite 3.51.1 context |
+| 2025-12-02 | Genericized - removed project-specific refs, added ROADMAP.md convention |
+| 2025-12-02 | Added profiler.md reference, expanded scoop.md |
+| 2025-12-01 | Added EIS documentation patterns |
 | 2025-11-29 | Initial structure created |
-
