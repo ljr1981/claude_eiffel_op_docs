@@ -49,8 +49,20 @@ end
 | `HATS.md` | Focused work modes - tell Claude which "hat" to wear for specific tasks |
 | `gotchas.md` | Known doc-vs-reality conflicts (including EIS annotations) |
 | `across_loops.md` | Iteration patterns |
-| `scoop.md` | Concurrency patterns |
+| `scoop.md` | SCOOP concurrency model - separate keyword, processors, wait conditions |
+| `profiler.md` | EiffelStudio profiler usage and configuration |
 | `patterns.md` | Verified working code |
+
+---
+
+## Operational Notes
+
+**Always read this reference documentation** when starting work on any Eiffel project. Key capabilities:
+
+1. **Compilation**: Can compile via `ec.exe -batch` command line
+2. **Testing**: Can run tests via `ec.exe -batch ... -tests`
+3. **Profiling**: Can enable profiling in ECF, but full analysis requires EiffelStudio GUI
+4. **SCOOP**: Can implement concurrency using `separate` keyword (see `scoop.md`)
 
 ## EIS (Eiffel Information System) Quick Reference
 
@@ -71,6 +83,8 @@ HTML links back to EiffelStudio:
 
 | Date | Change |
 |------|--------|
+| 2025-12-02 | Added profiler.md reference, expanded scoop.md with comprehensive docs |
+| 2025-12-02 | Added Operational Notes section with compilation/testing capabilities |
 | 2025-12-01 | Added EIS (Eiffel Information System) documentation patterns |
 | 2025-11-30 | Added eiffel_sqlite_2025 dependency, SQLite 3.51.1 context |
 | 2025-11-29 | Initial structure created |
