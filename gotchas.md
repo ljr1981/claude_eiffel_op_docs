@@ -198,6 +198,75 @@ note
 
 ---
 
+## WSF/EWF Library Issues
+
+### WGI_INPUT_STREAM.read_string is a Procedure
+- **Docs say**: (expected) Functions return values directly
+- **Reality**: `read_string(n)` is a PROCEDURE that populates `last_string` attribute
+- **Verified**: 2025-12-02, EiffelStudio 25.02
+- **Example**:
+```eiffel
+-- WRONG: Treating read_string as a function
+l_body := wsf_request.input.read_string (content_length)  -- ERROR
+
+-- CORRECT: Call procedure, then access attribute
+wsf_request.input.read_string (content_length)
+l_body := wsf_request.input.last_string
+```
+
+### WSF_VALUE.string_representation Returns READABLE_STRING_32
+- **Docs say**: (not documented)
+- **Reality**: Use `string_representation` directly, not `as_string.to_string_32`
+- **Verified**: 2025-12-02, EiffelStudio 25.02
+- **Example**:
+```eiffel
+-- WRONG: as_string returns WSF_STRING, not a string
+Result := l_param.as_string.to_string_32  -- ERROR
+
+-- CORRECT: Use string_representation directly
+Result := l_param.string_representation.to_string_32
+```
+
+### ECF Environment Variable References
+- **Docs say**: (limited documentation)
+- **Reality**: Use `$ENV_VAR` syntax in ECF location attributes; avoid hard-coded paths
+- **Verified**: 2025-12-02, EiffelStudio 25.02
+- **Example**:
+```xml
+<!-- WRONG: Hard-coded path -->
+<library name="framework" location="D:\prod\framework\framework.ecf"/>
+
+<!-- CORRECT: Environment variable reference -->
+<library name="framework" location="$FRAMEWORK\framework.ecf"/>
+```
+- **Setup**: Set environment variables at User level via PowerShell:
+```powershell
+[System.Environment]::SetEnvironmentVariable('FRAMEWORK', 'D:\prod\framework', 'User')
+```
+
+---
+
+## Test Framework
+
+### Use TEST_SET_BASE, Not EQA_TEST_SET
+- **Docs say**: Inherit from `EQA_TEST_SET` for test classes
+- **Reality**: Use `TEST_SET_BASE` from testing_ext library for consistent assertions and helpers
+- **Verified**: 2025-12-02, EiffelStudio 25.02
+- **Example**:
+```eiffel
+-- WRONG: Standard EQA test set
+class MY_TEST
+inherit
+    EQA_TEST_SET
+
+-- CORRECT: Extended test set with helpers
+class MY_TEST
+inherit
+    TEST_SET_BASE
+```
+
+---
+
 ## Pending Investigation
 
 ### Across Loop Item Access

@@ -339,3 +339,153 @@ invariant
 end
 ```
 **Verified**: 2025-12-02, EiffelStudio 25.02
+
+---
+
+## HTTP Server Patterns (EWF/WSF)
+
+### Basic WSF Server with Execution Handler
+```eiffel
+class MY_SERVER
+inherit
+    WSF_DEFAULT_SERVICE [MY_EXECUTION]
+        redefine
+            initialize
+        end
+create
+    make
+feature {NONE} -- Initialization
+    make (a_port: INTEGER)
+        do
+            port := a_port
+            initialize
+            set_service_option ("port", a_port)
+        end
+
+    initialize
+        do
+            Precursor
+        end
+feature -- Access
+    port: INTEGER
+feature -- Server Control
+    start
+        do
+            print ("Starting server on port " + port.out + "...%N")
+            launch (service_options)
+        end
+end
+
+class MY_EXECUTION
+inherit
+    WSF_EXECUTION
+create
+    make
+feature -- Execution
+    execute
+        do
+            -- Access request with: request.path_info, request.request_method
+            -- Send response with: response.set_status_code, response.put_string
+            response.set_status_code (200)
+            response.put_header_text ("Content-Type: text/plain%R%N%R%N")
+            response.put_string ("Hello World")
+        end
+end
+```
+**Verified**: 2025-12-02, EiffelStudio 25.02
+
+### Singleton Router Pattern (Once Function)
+Share state between server and execution instances using once functions:
+
+```eiffel
+-- In both MY_SERVER and MY_EXECUTION:
+router: MY_ROUTER
+        -- Shared singleton (same instance everywhere)
+    once
+        create Result
+    end
+```
+
+**Why**: WSF creates new execution instances per request. Once functions ensure the same router instance is shared across all.
+**Verified**: 2025-12-02, EiffelStudio 25.02
+
+### Agent-Based Route Handler
+```eiffel
+class MY_SERVER
+feature -- Route Registration
+    on_get (a_pattern: STRING; a_handler: PROCEDURE [MY_REQUEST, MY_RESPONSE])
+        local
+            l_route: MY_ROUTE
+        do
+            create l_route.make ("GET", a_pattern, a_handler)
+            router.add_route (l_route)
+        end
+feature {NONE} -- Handlers (example)
+    handle_users (a_request: MY_REQUEST; a_response: MY_RESPONSE)
+        do
+            a_response.send_json ("{%"users%":[]}")
+        end
+end
+
+-- Usage:
+create server.make (8080)
+server.on_get ("/api/users", agent handle_users)
+server.on_get ("/api/users/{id}", agent handle_user)
+server.start
+```
+**Verified**: 2025-12-02, EiffelStudio 25.02
+
+### URL Pattern Matching with Path Parameters
+```eiffel
+feature -- Matching
+    path_matches (a_path: STRING_32): BOOLEAN
+            -- Does `a_path' match this route's pattern?
+            -- Pattern "/users/{id}" matches "/users/123"
+        local
+            l_path_segs, l_pattern_segs: LIST [STRING_32]
+            i: INTEGER
+        do
+            l_path_segs := a_path.split ('/')
+            l_pattern_segs := pattern.to_string_32.split ('/')
+            -- Remove empty segments from leading/trailing slashes
+            -- ... (cleanup code)
+            if l_path_segs.count = l_pattern_segs.count then
+                Result := True
+                from i := 1 until i > l_pattern_segs.count or not Result loop
+                    if is_parameter (l_pattern_segs.i_th (i)) then
+                        Result := not l_path_segs.i_th (i).is_empty
+                    else
+                        Result := l_path_segs.i_th (i).same_string (l_pattern_segs.i_th (i))
+                    end
+                    i := i + 1
+                end
+            end
+        end
+
+    is_parameter (a_segment: STRING_32): BOOLEAN
+        do
+            Result := a_segment.count >= 2 and then
+                      a_segment.item (1) = '{' and then
+                      a_segment.item (a_segment.count) = '}'
+        end
+```
+**Verified**: 2025-12-02, EiffelStudio 25.02
+
+### Reading Request Body from WSF
+```eiffel
+body: STRING_8
+        -- Request body as string
+    local
+        l_length: INTEGER
+    do
+        l_length := wsf_request.content_length_value.to_integer_32.max (0)
+        if l_length > 0 and then not wsf_request.input.end_of_input then
+            wsf_request.input.read_string (l_length)
+            Result := wsf_request.input.last_string
+        else
+            create Result.make_empty
+        end
+    end
+```
+**Note**: `read_string` is a PROCEDURE, not a function. It populates `last_string`.
+**Verified**: 2025-12-02, EiffelStudio 25.02
