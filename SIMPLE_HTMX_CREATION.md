@@ -540,24 +540,31 @@ raw_html (a_html: READABLE_STRING_GENERAL): like Current
     end
 ```
 
-## TDD Lesson Learned
+## TDD in Context
 
-**The mistake:** I fixed the bug FIRST, then wrote tests to verify it.
+**What happened:** Fixed the bug first, then wrote tests to verify it.
 
-**The correct approach (TDD):**
+**The "JR dev" moment:** When you have a *known bug* with *log data available* to shape the test, that's the ideal scenario for test-first:
 1. Write a test that demonstrates the bug (expects accumulation, gets overwrite)
-2. Watch the test FAIL
+2. Watch the test FAIL (proves the test catches the bug)
 3. Fix the bug
 4. Watch the test PASS
 
 **Human feedback:** *"You are SUCH A JR. !!! :-) LOL"*
 
-This is a fundamental TDD principle - the failing test proves:
-1. The test actually tests what you think it tests
-2. The bug exists as you understand it
-3. Your fix actually addresses the bug
+**BUT - context is king:**
 
-Without seeing the test fail first, you can't be certain your test would have caught the bug.
+Test-first is NOT always the right approach. When designing new features or exploring implementation options, you often don't know what the code will look like. In those cases:
+1. Write the code (discover the design)
+2. Write the tests (codify the behavior)
+3. Run and iterate
+
+The test-first approach shines specifically when:
+- You have a **known bug** to reproduce
+- You have **log data** or clear symptoms to shape the test
+- The expected behavior is **well-defined** before implementation
+
+As the human noted: *"No battle plan survives contact with the enemy."*
 
 ## Using Log Data to Shape Tests
 
