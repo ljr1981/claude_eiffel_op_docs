@@ -20,30 +20,29 @@ This file tracks the current state of work so Claude can resume context in new c
 
 ## Where We Left Off
 
-**Last Session Date**: 2025-12-02
+**Last Session Date**: 2025-12-03
 
 **Last Completed**:
-- **HTTP Server Implementation in simple_web**:
-  - `SIMPLE_WEB_SERVER` - Main server with agent-based routing (on_get, on_post, etc.)
-  - `SIMPLE_WEB_SERVER_EXECUTION` - WSF_EXECUTION subclass for dispatching
-  - `SIMPLE_WEB_SERVER_REQUEST` - Request wrapper (path params, query params, body, headers)
-  - `SIMPLE_WEB_SERVER_RESPONSE` - Response wrapper (send_json, send_text, status codes)
-  - `SIMPLE_WEB_SERVER_ROUTE` - URL pattern matching with {param} placeholders
-  - `SIMPLE_WEB_SERVER_ROUTER` - Singleton for route storage (once function pattern)
-  - 14 new server tests for route and router functionality
-- **ECF Environment Variable Fix**:
-  - Converted hard-coded paths to `$FRAMEWORK`, `$SIMPLE_JSON`, `$TESTING_EXT`
-  - Removed self-referencing library entry (bug)
-  - Added `wsf` library for core WSF classes
-- **Test Cleanup**: Removed 2 brittle Ollama tests that checked exact LLM output
+- **simple_htmx Library Created** (new library):
+  - Fluent HTML/HTMX builder for Eiffel web applications
+  - 34 classes (HTMX_ELEMENT base, HTMX_FACTORY, HTMX_RENDER_CONTEXT, 31 element classes)
+  - 35+ tests passing
+  - Type-safe HTMX attributes, automatic HTML escaping
+  - Fixed `raw_html` accumulation bug (was overwriting instead of appending)
+  - Added h4, h5 elements and input_number factory method
+
+- **simple_gui_designer Major Refactoring**:
+  - **God Class Refactor**: Extracted 2000-line GUI_DESIGNER_SERVER into 10 focused handler classes via multiple inheritance
+  - **simple_htmx Integration**: Refactored HTML rendering to use fluent builders (gds_html_renderer.e, gds_static_html.e)
+  - **Bug Fixes**: ARRAY.has reference equality fix, JSON key name compatibility (row/col vs grid_row/grid_col)
+  - **Tests**: Added 4 regression tests for control type validation and JSON parsing
+  - Handler classes created: GDS_SHARED_STATE, GDS_SPEC_HANDLERS, GDS_SCREEN_HANDLERS, GDS_CONTROL_HANDLERS, GDS_CONTAINER_HANDLERS, GDS_HTMX_HANDLERS, GDS_EXPORT_HANDLERS, GDS_DOWNLOAD_UPLOAD_HANDLERS, GDS_HTML_RENDERER, GDS_STATIC_HTML
 
 **Key Technical Learnings**:
-- EWF/WSF architecture: `WSF_DEFAULT_SERVICE` + `WSF_EXECUTION` pattern
-- Singleton pattern using `once` functions shared between server and execution
-- `WSF_REQUEST.input.read_string(n)` is a procedure that populates `last_string`
-- `WSF_VALUE.string_representation` returns READABLE_STRING_32
-- Use `to_string_8` not obsolete `as_string_8`
-- Use `to_string_32` not obsolete `as_string_32`
+- **Fluent Interface in Eiffel**: Return `like Current` for chaining, use `.do_nothing` when function result unused
+- **ARRAY.has Uses Reference Equality**: For STRING comparisons, use `across...some...same_string` instead
+- **Multiple Inheritance for Refactoring**: Extract God class into handler mixins, main class inherits all
+- **raw_html Must Append**: `content_text.append()` not assignment, or only last call appears
 
 ---
 
@@ -53,6 +52,8 @@ This file tracks the current state of work so Claude can resume context in new c
 |---------|----------|-------|--------|
 | simple_sql | D:\prod\simple_sql | 339 | Complete |
 | simple_web | D:\prod\simple_web | 70 | Complete |
+| simple_htmx | D:\prod\simple_htmx | 35+ | Complete |
+| simple_gui_designer | D:\prod\simple_gui_designer | 10 | Complete |
 | simple_json | D:\prod\simple_json | - | Stable |
 | framework | D:\prod\framework | - | Stable |
 | testing_ext | D:\prod\testing_ext | - | Stable |
@@ -94,6 +95,47 @@ None currently.
 ---
 
 ## Session Notes
+
+### 2025-12-03 (Session 13 - simple_htmx Creation & Integration)
+
+**Task**: Create simple_htmx library and integrate into simple_gui_designer
+
+**Context**:
+- Code smell analysis of simple_gui_designer identified friction: manual `.append()` chains, HTMX attribute typos, parameter threading
+- Decision: Create separate library (not in simple_web) for single responsibility
+- Created simple_htmx, then refactored simple_gui_designer to use it
+
+**simple_htmx Implementation**:
+- 34 classes total (HTMX_ELEMENT base, HTMX_FACTORY, HTMX_RENDER_CONTEXT, 31 elements)
+- Fluent interface with `like Current` return types
+- Type-safe HTMX attributes (hx_get, hx_post, hx_target, hx_swap, etc.)
+- Automatic HTML escaping for security
+- 35+ tests
+
+**simple_gui_designer Refactoring**:
+- Extracted God class (2000 lines) into 10 handler classes via multiple inheritance
+- Refactored HTML rendering to use simple_htmx fluent builders
+- Fixed ARRAY.has bug (reference equality vs string comparison)
+- Added JSON key compatibility (row/col and grid_row/grid_col)
+- Added 4 regression tests
+
+**Bugs Fixed**:
+- `raw_html` accumulation: Changed from assignment to append
+- ARRAY.has: Use `across...some...same_string` for STRING matching
+- JSON keys: Support both naming conventions for backward compatibility
+
+**Git Commits**:
+- `60987ae` - Initial simple_htmx library (2,662 lines)
+- `01533e4` - Comprehensive documentation (950 lines)
+- `3f2ae20` - Add h4, h5, input_number (73 lines)
+- `6f19acb` - Fix raw_html accumulation bug (155 lines)
+- `f403a39` - GUI_DESIGNER_SERVER God class refactor (2,300 lines net)
+- `edf1821` - Refactor to use simple_htmx (387 lines changed)
+- `6e1600e` - Control loading bugs, DBC tests (194 lines)
+
+**Result**: simple_htmx complete, simple_gui_designer refactored and cleaned up
+
+---
 
 ### 2025-12-02 (Session 12 - HTTP Server Implementation)
 

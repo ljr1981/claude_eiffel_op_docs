@@ -20,8 +20,9 @@ Across multiple projects and sessions, AI-assisted Eiffel development consistent
 | **simple_json** | Complete | 215 | 11,400+ | `Readme.MD` |
 | **simple_sql** | Complete | 339 | ~17,200 | `docs/AI_PRODUCTIVITY_COMPARISON.md` |
 | **simple_web** | Complete | 95+ | ~8,000 | `docs/AI_PRODUCTIVITY.md` |
+| **simple_htmx** | Complete | 35+ | ~3,800 | `ROADMAP.md` |
 | **simple_ci** | Complete | - | ~1,600 | `docs/AI_PRODUCTIVITY.md` |
-| **simple_gui_designer** | Complete | 1 | ~5,300 | `docs/AI_PRODUCTIVITY.md` |
+| **simple_gui_designer** | Complete | 10 | ~7,000 | `docs/AI_PRODUCTIVITY.md` |
 | **simple_process** | Complete | 4 | ~500 | (new library) |
 | **simple_randomizer** | Complete | 27 | ~1,100 | (new library) |
 | **simple_ai_client** | Stable | - | - | - |
@@ -29,17 +30,18 @@ Across multiple projects and sessions, AI-assisted Eiffel development consistent
 
 ---
 
-## December 2-3, 2025: Marathon Session
+## December 2-3, 2025: Marathon Session (Updated)
 
 ### What Was Built (Git Commit Analysis)
 
-This 18+ hour session across December 2-3 touched **9 projects** with **40+ commits**:
+This extended session across December 2-3 touched **10 projects** with **50+ commits**:
 
 #### New Projects Created
 | Project | Lines | Tests | Purpose |
 |---------|-------|-------|---------|
 | **simple_ci** | ~1,600 | - | Homebrew CI tool for Eiffel |
-| **simple_gui_designer** | ~5,300 | 1 | HTMX-based GUI spec designer |
+| **simple_htmx** | ~3,800 | 35+ | Fluent HTML/HTMX builder |
+| **simple_gui_designer** | ~7,000 | 10 | HTMX-based GUI spec designer |
 | **simple_process** | ~500 | 4 | Process execution helper |
 | **simple_randomizer** | ~1,100 | 27 | Random data generation |
 
@@ -80,18 +82,25 @@ Dec 2 12:33 - reference_docs/eiffel: JSON patterns
 Dec 2 23:57 - simple_gui_designer: Initial commit (5,287 lines)
 Dec 3 00:29 - simple_gui_designer: Test fix
 Dec 3 00:30 - simple_ci: JSON config refactor (355 lines net)
+Dec 3 07:36 - simple_gui_designer: God class refactor (2,300 lines)
+Dec 3 08:24 - simple_htmx: Initial implementation (2,662 lines)
+Dec 3 08:37 - simple_htmx: Comprehensive documentation (950 lines)
+Dec 3 08:59 - simple_htmx: Add h4, h5, input_number (73 lines)
+Dec 3 08:59 - simple_gui_designer: Refactor to use simple_htmx
+Dec 3 10:38 - simple_htmx: Fix raw_html bug (155 lines)
+Dec 3 10:39 - simple_gui_designer: Control loading bugs, DBC tests (194 lines)
 ```
 
 ### Session Statistics
 
 | Metric | Value |
 |--------|-------|
-| **Total Commits** | 40+ |
-| **Total Lines Added** | ~20,000+ |
-| **New Projects** | 4 |
+| **Total Commits** | 50+ |
+| **Total Lines Added** | ~27,000+ |
+| **New Projects** | 5 |
 | **Projects Enhanced** | 5 |
-| **Elapsed Time** | ~18 hours |
-| **Effective Coding** | ~12 hours |
+| **Elapsed Time** | ~24 hours |
+| **Effective Coding** | ~16 hours |
 
 ---
 
@@ -101,11 +110,11 @@ Dec 3 00:30 - simple_ci: JSON config refactor (355 lines net)
 
 | Metric | Value |
 |--------|-------|
-| **Total Lines** | ~55,000+ |
-| **Total Tests** | 700+ |
+| **Total Lines** | ~60,000+ |
+| **Total Tests** | 750+ |
 | **Calendar Days** | ~10 |
-| **Effective Hours** | ~80 |
-| **Projects** | 9 libraries/tools |
+| **Effective Hours** | ~85 |
+| **Projects** | 10 libraries/tools |
 | **Languages** | Eiffel + C + JavaScript |
 
 ### Productivity Multipliers
@@ -115,8 +124,9 @@ Dec 3 00:30 - simple_ci: JSON config refactor (355 lines net)
 | simple_json | 11-16 months | 4 days | 44-66x |
 | simple_sql | 9-14 months | 2 days | 50-75x |
 | simple_web full | 2-3 months | 18 hrs | 50-80x |
+| simple_htmx | 2-3 weeks | 4 hrs | 60-90x |
 | simple_ci | 1-2 weeks | 3 hrs | 40-60x |
-| simple_gui_designer | 4-8 weeks | 8 hrs | 40-80x |
+| simple_gui_designer | 6-12 weeks | 12 hrs | 40-80x |
 | **Average** | - | - | **45-75x** |
 
 ---
@@ -127,21 +137,21 @@ Dec 3 00:30 - simple_ci: JSON config refactor (355 lines net)
 
 | Metric | Traditional | AI-Assisted | Savings |
 |--------|-------------|-------------|---------|
-| **Hours** | 5,000-8,000 | ~80 | 4,920-7,920 hours |
-| **Cost (@$85/hr)** | $425,000-$680,000 | ~$7,000 | **$418,000-$673,000** |
-| **Calendar Time** | 24-40 months | ~10 days | 23-39 months |
+| **Hours** | 5,500-9,000 | ~85 | 5,415-8,915 hours |
+| **Cost (@$85/hr)** | $467,500-$765,000 | ~$7,500 | **$460,000-$757,500** |
+| **Calendar Time** | 26-45 months | ~10 days | 25-44 months |
 
 ### ROI
 
 ```
-RETURN ON INVESTMENT (Updated December 3, 2025)
+RETURN ON INVESTMENT (Updated December 3, 2025 - Session 13)
 ═══════════════════════════════════════════════════════════════════
 
-Investment:     ~$7,000 (AI API + human time)
-Output Value:   $425,000-$680,000 (traditional equivalent)
-ROI:            6,000% - 9,600%
+Investment:     ~$7,500 (AI API + human time)
+Output Value:   $467,500-$765,000 (traditional equivalent)
+ROI:            6,133% - 10,100%
 
-For every $1 invested, we received $61-$97 in value.
+For every $1 invested, we received $62-$102 in value.
 
 ═══════════════════════════════════════════════════════════════════
 ```
@@ -163,11 +173,14 @@ simple_sql sprint (Nov 30 - Dec 1):
 simple_web server (Dec 2 morning):
   ████████████████████████████████████░░░░░░░░░░░░  7,385/day equiv
 
-December 2-3 Marathon:
-  ████████████████████████████████████████████████  20,000+/18hrs
-                                                    ~26,000/day equiv
+simple_htmx (Dec 3):
+  ██████████████████████████████████████████████░░  ~22,800/day equiv
 
-TREND: Peak velocity achieved in marathon session
+December 2-3 Extended Marathon:
+  ████████████████████████████████████████████████  27,000+/24hrs
+                                                    ~27,000/day equiv
+
+TREND: Sustained peak velocity with library extraction pattern
 
 ═══════════════════════════════════════════════════════════════════
 ```
@@ -304,6 +317,13 @@ COLLABORATION PATTERN
 - External JSON config > hardcoded values
 - No more recompiling to add projects!
 
+#### Library Extraction Patterns (Session 13)
+- **Code Smell Analysis First**: Identify friction before extracting
+- **Fluent Interface in Eiffel**: Return `like Current`, use `.do_nothing` for unused results
+- **God Class Refactoring**: Extract to handler mixins, use multiple inheritance
+- **ARRAY.has Reference Equality**: For STRING comparison use `across...some...same_string`
+- **raw_html Must Append**: Assignment overwrites, append accumulates
+
 ---
 
 ## Project-Specific Documentation
@@ -314,6 +334,7 @@ For detailed session-by-session productivity tracking, see:
 |---------|------|
 | simple_sql | `D:\prod\simple_sql\docs\AI_PRODUCTIVITY_COMPARISON.md` |
 | simple_web | `D:\prod\simple_web\docs\AI_PRODUCTIVITY.md` |
+| simple_htmx | `D:\prod\simple_htmx\ROADMAP.md` |
 | simple_ci | `D:\prod\simple_ci\docs\AI_PRODUCTIVITY.md` |
 | simple_gui_designer | `D:\prod\simple_gui_designer\docs\AI_PRODUCTIVITY.md` |
 
@@ -343,10 +364,10 @@ For detailed session-by-session productivity tracking, see:
 
 The productivity multipliers aren't one-time achievements - they're reproducible across projects, problem domains, and sessions. The key is the human-AI collaboration model: human vision and judgment, AI execution and scale.
 
-The December 2-3 marathon session demonstrated that with proper tooling and documentation, **20,000+ lines of production code across 9 projects can be created in a single extended session**.
+The December 2-3 extended marathon session demonstrated that with proper tooling and documentation, **27,000+ lines of production code across 10 projects can be created in a single extended session**, including creating new libraries and refactoring existing code to use them.
 
 ---
 
-**Last Updated:** December 3, 2025
+**Last Updated:** December 3, 2025 (Session 13)
 **AI Model:** Claude Opus 4.5
 **Human Expert:** Larry Rix
