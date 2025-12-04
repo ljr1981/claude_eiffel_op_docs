@@ -57,7 +57,7 @@ Between late November and December 3, 2025, a sustained AI-assisted development 
 
 ### The Collaboration Model
 
-- **Human Expert:** Larry Rix (decades of Eiffel experience, trained 12+ developers over 5 years)
+- **Human Expert:** Larry Rix (~15 years of Eiffel experience, trained 12+ developers over 5 years)
 - **AI Assistant:** Claude (Anthropic), specifically Claude Opus 4.5
 - **Tooling:** Claude Code CLI with direct file system access, EiffelStudio ec.exe compiler
 - **Knowledge Base:** Accumulated reference documentation capturing patterns, gotchas, and verified solutions
