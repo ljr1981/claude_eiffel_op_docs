@@ -1,44 +1,72 @@
-# Eiffel Language Reference Documentation
+# Eiffel Reference Documentation
 
-This folder contains learnings, corrections, and practical knowledge about the Eiffel programming language gathered through hands-on development experience.
+Reference documentation for Eiffel development, Claude AI workflows, and strategic planning.
 
-## Purpose
+---
 
-Official Eiffel documentation is sometimes outdated or incomplete. This reference captures:
-- **Compiler-verified behaviors** (what actually works vs. what docs say)
-- **Gotchas and corrections** to common misconceptions
-- **Practical patterns** that work in real code
-- **SCOOP** concurrency patterns and pitfalls
-- **Modern syntax** extensions and their proper usage
+## Quick Start
 
-## Structure
+**Starting a new Claude session?** Read these first:
+1. [`claude/CONTEXT.md`](claude/CONTEXT.md) - Session startup protocol
+2. Look for `ROADMAP.md` in the project you're working on
+3. Ask "What would you like to work on this session?"
 
-### Core Files (Read First)
-- `CLAUDE_CONTEXT.md` - **READ THIS FIRST** - Session startup protocol and general Eiffel knowledge
+---
 
-### Working Modes
-- `HATS.md` - Focused work modes ("hats") for specific tasks (refactoring, contracting, testing, etc.)
+## Folder Structure
 
-### Language Reference
-- `across_loops.md` - Iteration constructs, cursors, and the `.item` question (resolved)
-- `patterns.md` - Verified working code patterns
-- `gotchas.md` - Generic Eiffel "docs say X but reality is Y" corrections
+### [`claude/`](claude/) - AI Session Management
 
-### Specialized Topics
-- `scoop.md` - SCOOP concurrency model (separate keyword, processors, wait conditions)
-- `profiler.md` - EiffelStudio profiler usage and configuration
-- `sqlite_gotchas.md` - SQLite/database-specific gotchas (for sqlite wrapper projects)
+Documents for Claude AI workflow and collaboration patterns.
 
-## Usage
+| File | Purpose |
+|------|---------|
+| [CONTEXT.md](claude/CONTEXT.md) | **Read first** - Session startup, general Eiffel knowledge |
+| [HATS.md](claude/HATS.md) | Focused work modes (refactoring, contracting, testing, etc.) |
+| [contract_patterns.md](claude/contract_patterns.md) | Design by Contract patterns for AI-assisted development |
+| [verification_process.md](claude/verification_process.md) | Code verification workflow |
+| [mentoring_mode.md](claude/mentoring_mode.md) | Teaching and explanation mode |
 
-### Starting a New Session
+### [`language/`](language/) - Eiffel Language Reference
 
-1. Read `CLAUDE_CONTEXT.md` for general Eiffel knowledge
-2. Look for `ROADMAP.md` in the project root for project-specific context
-3. If no ROADMAP.md exists, offer to create one
-4. Ask which project we're working on
+Practical knowledge about Eiffel that supplements official documentation.
 
-### Project-Specific Context
+| File | Purpose |
+|------|---------|
+| [gotchas.md](language/gotchas.md) | "Docs say X but reality is Y" corrections |
+| [patterns.md](language/patterns.md) | Verified working code patterns |
+| [across_loops.md](language/across_loops.md) | Iteration constructs, cursors, `.item` behavior |
+| [scoop.md](language/scoop.md) | SCOOP concurrency model |
+| [profiler.md](language/profiler.md) | EiffelStudio profiler usage |
+| [sqlite_gotchas.md](language/sqlite_gotchas.md) | SQLite/database-specific issues |
+
+### [`strategy/`](strategy/) - Business & Strategy
+
+Market analysis, competitive positioning, and development roadmaps.
+
+| File | Purpose |
+|------|---------|
+| [LIBRARY_ROADMAP.md](strategy/LIBRARY_ROADMAP.md) | **NEW** - Gap analysis vs. modern ecosystem |
+| [COMPETITIVE_ANALYSIS.md](strategy/COMPETITIVE_ANALYSIS.md) | Market positioning analysis |
+| [AI_PRODUCTIVITY.md](strategy/AI_PRODUCTIVITY.md) | AI productivity research and data |
+| [REFACTORING_CASE_STUDY.md](strategy/REFACTORING_CASE_STUDY.md) | Real-world refactoring case study |
+
+### [`archive/`](archive/) - Completed Project Plans
+
+Historical project planning documents (reference only).
+
+| File | Project |
+|------|---------|
+| simple_showcase_content.md | Content blueprint for showcase site |
+| simple_showcase_plan.md | Initial project plan |
+| simple_alpine_plan.md | Alpine.js wrapper project |
+| simple_htmx_creation.md | HTMX wrapper project |
+| simple_sql_*.md | SQL library planning |
+| current_work.md | Historical work tracking |
+
+---
+
+## Project Convention
 
 Each Eiffel project should have a `ROADMAP.md` in its root containing:
 - Project overview and current status
@@ -46,16 +74,20 @@ Each Eiffel project should have a `ROADMAP.md` in its root containing:
 - Current focus and backlog
 - Session notes
 
-This keeps the reference docs generic while project details live with each project.
+This keeps reference docs generic while project details live with each project.
+
+---
 
 ## Contributing
 
-When new learnings are discovered:
-1. Add to appropriate file (gotchas.md, patterns.md, etc.)
+When adding new learnings:
+1. Add to the appropriate folder/file
 2. Include verification date and EiffelStudio version
 3. Provide working code examples
-4. Update the Update Log in the relevant file
+4. Follow existing format in each file
+
+---
 
 ## Last Updated
 
-2025-12-02 - Genericized docs, added ROADMAP.md convention, split SQLite gotchas
+2025-12-05 - Reorganized into folders: claude/, language/, strategy/, archive/

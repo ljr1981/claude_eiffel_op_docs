@@ -265,6 +265,67 @@ inherit
     TEST_SET_BASE
 ```
 
+### ECF Test Target Configuration
+- **Docs say**: (limited documentation on AutoTest configuration)
+- **Reality**: Test targets need a simple root class; EQA_EVALUATOR is frozen and cannot be inherited
+- **Verified**: 2025-12-05, EiffelStudio 25.02
+- **Complete Setup**:
+
+1. **ECF Target Configuration**:
+```xml
+<target name="my_project_tests" extends="my_project">
+    <root class="MY_TEST_APP" feature="make"/>
+    <library name="testing" location="$ISE_LIBRARY\library\testing\testing.ecf"/>
+    <library name="testing_ext" location="$TESTING_EXT\testing_ext.ecf"/>
+    <cluster name="tests" location=".\tests\" recursive="true"/>
+</target>
+```
+
+2. **Root Class (MY_TEST_APP.e)** - Just a placeholder, AutoTest handles discovery:
+```eiffel
+class MY_TEST_APP
+create
+    make
+feature -- Initialization
+    make
+        do
+            do_nothing
+        end
+end
+```
+
+3. **Test Set Classes** - Inherit from TEST_SET_BASE:
+```eiffel
+class MY_FEATURE_TEST_SET
+inherit
+    TEST_SET_BASE
+feature -- Tests
+    test_something
+        do
+            assert ("description", some_condition)
+        end
+end
+```
+
+- **Key Points**:
+  - Root class is just for compilation; AutoTest discovers test_* features automatically
+  - Do NOT inherit from EQA_EVALUATOR (frozen class error)
+  - Do NOT use `all_classes="true"` as root - need explicit class
+  - Test features must start with `test_` prefix
+
+### Percent Signs in Test Assertions
+- **Docs say**: (not documented)
+- **Reality**: Percent signs in manifest strings must be escaped as `%%`
+- **Verified**: 2025-12-05, EiffelStudio 25.02
+- **Example**:
+```eiffel
+-- WRONG: Syntax error "incomplete string: missing final quote"
+assert ("has_percent", l_html.has_substring ("41%"))
+
+-- CORRECT: Escape the percent sign
+assert ("has_percent", l_html.has_substring ("41%%"))
+```
+
 ---
 
 ## Windows Command Execution
