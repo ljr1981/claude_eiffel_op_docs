@@ -719,3 +719,29 @@ Claude will adapt the focused approach to your specific need.
 | 2025-12-02 | Added Profiler hat for performance profiling work |
 | 2025-12-02 | Removed Bug Hunting hat (covered by Testing + Contracting), added Mock Building hat |
 | 2025-12-02 | Initial hats documentation created |
+
+---
+
+## Quick Reference: Running Tests
+
+**Run tests from command line**:
+```bash
+ec.exe -batch -config project.ecf -target test_target -tests
+```
+
+This compiles and runs all tests, outputting pass/fail results. Always run before commit!
+
+**AutoTest Coverage Tags** (add to test features):
+```eiffel
+test_feature_name
+    note
+        testing: "covers/{CLASS_NAME}.feature_name"
+    do
+        -- test code
+    end
+```
+
+Tag formats:
+- `"covers/{CLASS_NAME}.feature_name"` - Feature coverage
+- `"stress_test"` - Stress/load tests  
+- `"use_case/documentation"` - Use case categorization
