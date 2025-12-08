@@ -85,7 +85,7 @@ The simple_* collection is a **modern usability layer** that genuinely improves 
 | Standard library | Comprehensive | Growing |
 | Corporate backing | Google | Eiffel Software |
 
-**Verdict:** Go prioritizes simplicity and speed. Eiffel prioritizes correctness.
+**Verdict:** Go prioritizes compilation speed. simple_* prioritizes correctness AND usability.
 
 ### vs. Java (Maven Central)
 
