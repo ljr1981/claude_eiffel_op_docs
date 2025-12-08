@@ -112,8 +112,7 @@ All 51 repositories include:
 - SCOOP configuration: Done
 
 ### Phase 2: SCOOP - Configuration Complete
-- ECF declarations: Done
-- Runtime validation: Partial
+- ECF declarations: Done (all 51 repos have `support="scoop" use="thread"`)
 
 ### Phase 3: Wrapper Libraries - Not Started
 8 placeholder repositories exist without implementation:
