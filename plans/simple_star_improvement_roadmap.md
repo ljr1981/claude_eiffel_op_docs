@@ -33,7 +33,7 @@ Compile each library with `void_safety support="all"` and fix any errors:
 - Use `detachable` for truly optional values
 - Fix all VEVI/VJAR/VUTA errors
 
-### Step 1.3: Create package.iron for Every Library
+### Step 1.3: Create Docs for Every Library
 Each library gets a manifest file:
 
 ```
@@ -123,21 +123,23 @@ config.get_or_default ("port", "8080")
 
 ---
 
-## Phase 4: Iron Publication
+## Phase 4: Distribution via simple_setup + INNO
 
-### Step 4.1: Register on iron.eiffel.com
-1. Create account
-2. Register simple_* collection
+> Note: Iron (iron.eiffel.com) has been discontinued. Distribution is now via simple_setup CLI and INNO Setup installer.
 
-### Step 4.2: Publish Foundation Libraries First
-1. simple_json
-2. simple_uuid
-3. simple_base64
-4. simple_hash
-5. simple_validation
+### Step 4.1: simple_setup Package Manager (COMPLETE)
+1. ✓ CLI tool for installing individual libraries
+2. ✓ Environment variable management
+3. ✓ Library manifest with all 50+ libraries
 
-### Step 4.3: Publish Remaining Libraries
-- Staged rollout as void-safety/SCOOP audits complete
+### Step 4.2: INNO Setup Installer (COMPLETE)
+1. ✓ Windows installer generation
+2. ✓ Full ecosystem bundle install
+3. ✓ Available at: https://github.com/simple-eiffel/simple_setup
+
+### Step 4.3: GitHub Organization
+- ✓ All libraries published to https://github.com/simple-eiffel
+- ✓ GitHub Pages documentation enabled
 
 ---
 
@@ -148,7 +150,7 @@ config.get_or_default ("port", "8080")
 - Compile with void_safety="all"
 - Compile with concurrency="scoop"
 - Run all tests
-- Validate package.iron
+- Validate Docs
 ```
 
 ### Step 5.2: Quality Gates
@@ -180,10 +182,10 @@ config.get_or_default ("port", "8080")
 |----------|------|--------|
 | P0 | ECF capability standardization | Prevents undefined behavior |
 | P0 | Void-safety audit | Production safety |
-| P1 | package.iron files | Enables distribution |
+| P1 | simple_setup manifest | Enables distribution |
 | P1 | simple_http wrapper | Most requested feature |
 | P2 | SCOOP variants | Concurrent applications |
-| P2 | Iron publication | Discoverability |
+| P2 | GitHub Pages docs | Discoverability |
 | P3 | CI/CD pipeline | Quality enforcement |
 | P3 | Additional wrappers | Ecosystem completeness |
 
@@ -191,7 +193,7 @@ config.get_or_default ("port", "8080")
 
 ## Library-by-Library Checklist
 
-| Library | ECF Fixed | Void-Safe | SCOOP | package.iron | Iron Published |
+| Library | ECF Fixed | Void-Safe | SCOOP | Docs | GitHub Docs |
 |---------|-----------|-----------|-------|--------------|----------------|
 | simple_base64 | [ ] | [ ] | [ ] | [ ] | [ ] |
 | simple_cache | [ ] | [ ] | [ ] | [ ] | [ ] |

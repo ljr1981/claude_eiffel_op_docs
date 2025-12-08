@@ -577,6 +577,23 @@ create l_path.make_from_string (...)  -- VGCC error!
 
 ---
 
+## Using ec.exe for Code Understanding
+
+When working with unfamiliar code or before making changes, use ec.exe introspection options to understand the codebase:
+
+| Situation | Command | Purpose |
+|-----------|---------|---------|
+| Before modifying a class | `-clients CLASS` | See who depends on it |
+| Understanding dependencies | `-suppliers CLASS` | See what it uses |
+| VHRC inheritance errors | `-ancestors CLASS` | Check parent chain for available features |
+| Learning a class API | `-short CLASS` | See public interface without implementation |
+| Before changing a feature | `-callers CLASS.feature` | Find all call sites |
+| Understanding full API | `-flatshort CLASS` | All public features including inherited |
+
+**See:** `ec_introspection_howto.md` for complete use-case guide.
+
+---
+
 *Last updated: 2025-12-07*
 
 **Sources:**

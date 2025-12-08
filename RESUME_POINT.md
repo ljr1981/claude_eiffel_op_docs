@@ -1,185 +1,142 @@
 # Resume Point
 
-**Date:** 2025-12-07
-**Last Session:** simple_pdf with fluent API and full documentation COMPLETE
-
----
-
-## 🎯 EIFFEL EXPERT MODE - READ FIRST
-
-**Claude: You are Larry's Eiffel Expert.** At the start of EVERY session:
-
-### Mandatory Startup Protocol
-1. **Read this file** - understand current state and next steps
-2. **Read `claude/CONTEXT.md`** - compiler paths, ECF patterns, session workflow
-3. **Scan `language/gotchas.md`** - avoid known pitfalls (VAPE, STRING_32, across loops)
-4. **Reference `language/patterns.md`** - use verified working code patterns
-5. **Know the HATS** (`claude/HATS.md`) - use focused work modes when appropriate
-
-### Your Eiffel Knowledge Base
-You have access to comprehensive Eiffel documentation in this folder:
-- **claude/EIFFEL_MENTAL_MODEL.md** - Condensed ECMA-367 essentials (read this, not the full spec)
-- **language/gotchas.md** - Doc vs reality corrections (critical!)
-- **language/patterns.md** - Verified working code (MI mixin, fluent API, WSF)
-- **language/across_loops.md** - Iteration constructs (cursor.item vs cursor)
-- **language/scoop.md** - SCOOP concurrency model
-- **language/sqlite_gotchas.md** - Database-specific issues
-- **claude/contract_patterns.md** - Complete postcondition templates
-- **claude/verification_process.md** - Meyer's "probable to provable" framework
-- **claude/HATS.md** - Focused work modes (Specification, Testing, etc.)
-- **ECMA-367_Full.md** - Full language spec (only for edge cases)
-
-### Key Eiffel Principles
-- **Trust compiler errors** over documentation when they conflict
-- **Design by Contract** - specify BEFORE implementing (Specification Hat)
-- **MI pattern** - use deferred mixin classes for god-class decomposition
-- **Fluent APIs** - return `like Current` and `Result := Current`
-- **VAPE rule** - preconditions cannot reference private features
-- **STRING_32 vs STRING_8** - explicit `.to_string_8` conversion required
-
-### simple_* Library Ecosystem
-- **26 libraries** in the ecosystem
-- **API Hierarchy**: FOUNDATION_API → SERVICE_API → APP_API
-- Libraries "flow uphill" - adding to SERVICE_API makes it available in APP_API
-- **Environment variables**: `$SIMPLE_*` patterns for ECF locations
+**Date:** 2025-12-08
+**Last Session:** AutoTest fixes, ECF UUID deduplication, installer improvements
 
 ---
 
 ## Current State
 
-### simple_pdf (COMPLETE)
-- **Location:** `D:\prod\simple_pdf`
-- **Status:** Fully functional, 10 tests passing, committed to GitHub
-- **GitHub Repo:** https://github.com/ljr1981/simple_pdf
-- **Architecture:** Multi-engine with deferred base class
-  - `SIMPLE_PDF_ENGINE` (deferred) - base class with page settings
-  - `SIMPLE_PDF_WKHTMLTOPDF` - default engine (bundled)
-  - `SIMPLE_PDF_CHROME` - best CSS quality (Chrome/Edge headless)
-  - `SIMPLE_PDF_READER` - text extraction via pdftotext (Poppler)
-  - `SIMPLE_PDF_DOCUMENT` - result object (is_valid, save_to_file, as_base64)
-  - `SIMPLE_PDF_ENGINES` - engine availability reporter
-- **Features:**
-  - Fluent API: `pdf.page("Letter").landscape.margin_all("1in").from_html(html)`
-  - Traditional API: `pdf.set_page_size("A4")`, `pdf.set_orientation("Portrait")`
-  - API integration: Part of SERVICE_API (flows up to APP_API)
-- **Binaries in bin/:**
-  - wkhtmltopdf 0.12.6 (LGPL v3) - ~40MB
-  - pdftotext 24.08.0 (Poppler, GPL v2+) - ~22MB
-- **Tests:** 10/10 passing (6 unit + 4 integration)
+### simple_setup (COMPLETE)
+- **Location:** `D:\prod\simple_setup`
+- **Status:** Fully functional, installer v1.0.3 generated
+- **GitHub Repo:** https://github.com/simple-eiffel/simple_setup
 
-### Libraries Complete
-- 26 libraries in simple_* ecosystem (including simple_pdf)
-- All integrated into FOUNDATION_API / SERVICE_API / APP_API
+#### Recent Improvements (This Session)
+1. **Installer EIFGENs exclusion fixed** - Changed `*\EIFGENs\*` to `EIFGENs\*` (Inno Setup matches from relative path)
+2. **Added logo branding** - `WizardImageFile=logo-tall.png`, `WizardSmallImageFile=logo-small.png`
+3. **Directory selection enabled** - Added `DisableDirPage=no` to [Setup] section
+4. **Version:** 1.0.3 installer at `D:\prod\simple_setup\output\simple_ecosystem_1.0.3_setup.exe`
+
+### AutoTest Discovery (FIXED)
+Tests were not appearing in EiffelStudio AutoTest tool. Root causes and fixes:
+
+1. **Wrong testing note** - 144 test files had `testing: "type/manual"` which hides from AutoTest
+   - Fixed: Changed to `testing: "covers/{CLASS}.feature"` format
+
+2. **Missing testing.ecf library** - Test targets had `simple_testing` but not ISE's `testing.ecf`
+   - Fixed: Added `<library name="testing" location="$ISE_LIBRARY\library\testing\testing.ecf"/>` to 40 ECFs
+
+### ECF UUID Deduplication (FIXED)
+- Found duplicate UUID `A1B2C3D4-E5F6-7890-ABCD-EF1234567890` shared by simple_ci and simple_validation
+- Fixed: Changed simple_ci UUID to `C1D2E3F4-5A6B-7C8D-9E0F-A1B2C3D4E5F6`
+- All 40+ ECFs now have unique UUIDs
+
+### Compilation Fixes (FIXED)
+| File | Issue | Fix |
+|------|-------|-----|
+| `simple_jwt\tests\simple_jwt_test_set.e:566` | Unknown `assert_integers_64_equal` | Changed to `assert ("user_id equals 12345", user_id = 12345)` |
+| `simple_logger\src\simple_logger.e` | Unused `l_writer` | Removed local declaration |
+| `simple_datetime\src\simple_date.e` | Unused `l_jan1_dow` | Removed local declaration |
+| `simple_datetime\src\simple_time.e` | Unused `l_time_part` | Removed local declaration |
 
 ---
 
-## Learnings from simple_pdf Build
+## Helper Scripts Created
 
-### 1. PATH_NAME is Deferred
-- Cannot instantiate PATH_NAME directly
-- Use `EXECUTION_ENVIRONMENT.current_working_path.name.to_string_8` instead
-- To get absolute path: Prepend cwd to relative paths
-
-### 2. Executable Path Resolution
-- Relative paths like "bin/wkhtmltopdf.exe" work for file.exists check
-- But PROCESS_FACTORY needs absolute paths to launch reliably
-- Solution: Check if path is absolute, otherwise prepend cwd:
-```eiffel
-l_cwd := l_env.current_working_path.name.to_string_8
-if l_path.starts_with ("C:") or l_path.starts_with ("/") then
-    executable_path := l_path
-else
-    executable_path := l_cwd + "/" + l_path
-end
+### reset_env.ps1
+Resets all 44 SIMPLE_* environment variables to `D:\prod`:
+```powershell
+D:\prod\simple_setup\reset_env.ps1
 ```
 
-### 3. STRING_32 to STRING Conversion
-- Environment variables return STRING_32 (READABLE_STRING_32)
-- Use `.to_string_8` for explicit conversion to STRING
-- Avoids obsolete warnings about implicit as_string_8
-
-### 4. Test App Pattern
-- Test apps should NOT inherit from EQA_TEST_SET/TEST_SET_BASE
-- Instead, create test app as standalone class
-- Create test set class separately, instantiate and call test methods
-- Use rescue/retry pattern for test isolation
-
-### 5. Fluent API Pattern in Eiffel
-- Return `like Current` from fluent methods to enable chaining
-- Set `Result := Current` at end of each fluent method
-- Keep traditional setters for backwards compatibility
-- Example:
-```eiffel
-page (a_size: STRING): like Current
-    do
-        set_page_size (a_size)
-        Result := Current
-    end
-
-landscape: like Current
-    do
-        set_orientation ("Landscape")
-        Result := Current
-    end
+### fix_ecfs.ps1
+Adds `testing.ecf` library to ECFs that have `simple_testing` but missing ISE testing:
+```powershell
+D:\prod\simple_setup\fix_ecfs.ps1
 ```
-- Usage: `pdf.page ("Letter").landscape.margin_all ("1in").from_html (html)`
 
 ---
 
-## Next Steps
-
-1. **Tier 1 libraries** from roadmap:
-   - simple_xml (wraps XM_* classes)
-   - simple_datetime (wraps DATE/TIME)
-   - simple_file (wraps FILE/PATH/DIRECTORY)
-
-2. **Potential improvements** (if needed):
-   - Add more PDF engines (WeasyPrint, Prince)
-   - PDF merging/splitting
-   - Watermark support
+## GitHub Organization
+- **Organization:** https://github.com/simple-eiffel
+- **Plan:** Team ($4/month)
+- **Repos:** 57 simple_* libraries transferred
 
 ---
 
-## Key Files
+## Environment Variables
+
+All set to `D:\prod\<library_name>`:
+```
+SIMPLE_BASE64, SIMPLE_HASH, SIMPLE_UUID, SIMPLE_RANDOMIZER, SIMPLE_JSON,
+SIMPLE_XML, SIMPLE_CSV, SIMPLE_MARKDOWN, SIMPLE_DATETIME, SIMPLE_VALIDATION,
+SIMPLE_REGEX, SIMPLE_PROCESS, SIMPLE_LOGGER, SIMPLE_HTMX, SIMPLE_ENV,
+SIMPLE_SYSTEM, SIMPLE_CONSOLE, SIMPLE_CLIPBOARD, SIMPLE_REGISTRY, SIMPLE_MMAP,
+SIMPLE_IPC, SIMPLE_WATCHER, SIMPLE_WIN32_API, SIMPLE_CACHE, SIMPLE_TEMPLATE,
+SIMPLE_JWT, SIMPLE_CORS, SIMPLE_RATE_LIMITER, SIMPLE_SMTP, SIMPLE_SQL,
+SIMPLE_WEBSOCKET, SIMPLE_HTTP, SIMPLE_ENCRYPTION, SIMPLE_CONFIG, SIMPLE_PDF,
+SIMPLE_TESTING, SIMPLE_FOUNDATION_API, SIMPLE_SERVICE_API, SIMPLE_WEB,
+SIMPLE_APP_API, SIMPLE_ALPINE, SIMPLE_AI_CLIENT, SIMPLE_GUI_DESIGNER, SIMPLE_SETUP
+```
+
+---
+
+## Commands to Resume
+
+### Build simple_setup
+```bash
+cd /d/prod/simple_setup
+"/c/Program Files/Eiffel Software/EiffelStudio 25.02 Standard/studio/spec/win64/bin/ec.exe" \
+  -batch -config simple_setup.ecf -target simple_setup -c_compile
+```
+
+### Build Installer
+```bash
+./EIFGENs/simple_setup/W_code/simple_setup.exe build-installer --version=1.0.3
+```
+
+### Test simple_setup CLI
+```bash
+./EIFGENs/simple_setup/W_code/simple_setup.exe help
+./EIFGENs/simple_setup/W_code/simple_setup.exe list
+./EIFGENs/simple_setup/W_code/simple_setup.exe status
+```
+
+---
+
+## Minor TODOs (Optional)
+
+1. **Inno Script Warning:** `IsTaskSelected` should be `WizardIsTaskSelected`
+   - In `generate_code` feature of `sst_inno_generator.e`
+
+2. **Missing Libraries:** Create simple_http, simple_encryption, simple_config
+   - Or remove from manifest if not needed
+
+---
+
+## Key Reference Files
 
 | Need | Location |
 |------|----------|
-| simple_pdf source | `D:\prod\simple_pdf\src\` |
-| simple_pdf binaries | `D:\prod\simple_pdf\bin\` |
-| Eiffel gotchas | `reference_docs/language/gotchas.md` |
-| SQLite gotchas | `reference_docs/language/sqlite_gotchas.md` |
-| Library roadmap | `reference_docs/strategy/SIMPLIFICATION_ROADMAP.md` |
+| simple_setup source | `D:\prod\simple_setup\src\` |
+| Library manifest | `D:\prod\simple_setup\src\sst_manifest.e` |
+| Inno generator | `D:\prod\simple_setup\src\sst_inno_generator.e` |
+| Generated installer | `D:\prod\simple_setup\output\` |
+| Reset env script | `D:\prod\simple_setup\reset_env.ps1` |
+| Fix ECFs script | `D:\prod\simple_setup\fix_ecfs.ps1` |
 
 ---
 
-## API Design for simple_pdf
+## Library Layers (43 total)
 
-```eiffel
--- Default usage (wkhtmltopdf)
-create pdf.make
-doc := pdf.from_html ("<h1>Hello</h1>")
-doc.save_to_file ("output.pdf")
+| Layer | Count | Examples |
+|-------|-------|----------|
+| Foundation | 14 | json, csv, hash, uuid, regex, datetime, xml |
+| Platform | 9 | env, console, registry, win32_api, mmap, ipc |
+| Service | 12 | sql, smtp, jwt, cache, template, pdf, http |
+| API | 8 | testing, foundation_api, service_api, web, app_api |
 
--- Fluent API (concise, chainable)
-create pdf.make
-doc := pdf.page ("Letter").landscape.margin_all ("1in").from_html (report_html)
-doc.save_to_file ("report.pdf")
+---
 
--- Fluent with Chrome for best CSS
-create pdf.make
-doc := pdf.with_chrome.page ("A4").margins ("1in", "1in", "0.75in", "0.75in").from_url ("https://example.com")
-
--- Traditional API (explicit setters)
-create pdf.make
-pdf.set_page_size ("Letter")
-pdf.set_orientation ("Landscape")
-doc := pdf.from_url ("https://example.com")
-
--- Text extraction
-create reader.make
-text := reader.extract_text ("document.pdf")
-
--- Engine availability check
-create engines
-print (engines.report)  -- Shows which engines are available
-```
+*Last updated: 2025-12-08 - AutoTest fixed, ECF UUIDs deduplicated, installer v1.0.3*
