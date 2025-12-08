@@ -113,7 +113,7 @@ All 51 repositories include:
 | README.md | 51/51 |
 | CHANGELOG.md | 51/51 |
 | docs/index.html | 43/51 (all functional libraries) |
-| Generated API docs | 0/51 |
+| Generated API docs (Documentation/) | 43/43 functional libraries |
 
 ### Testing
 
@@ -156,7 +156,7 @@ All 51 repositories include:
 ### Phase 6: Documentation - Complete
 - README/CHANGELOG: Complete (51/51)
 - HTML docs: Complete (43/43 functional libraries)
-- API docs: Not started
+- API docs: Complete (43/43 functional libraries, ~55,000 HTML files)
 
 ---
 
@@ -168,13 +168,11 @@ All 51 repositories include:
 
 3. **No CI/CD** - Manual testing only. GitHub Actions would automate compilation and test verification on each commit.
 
-4. **No generated API documentation** - Documentation exists as README files and HTML pages, but no auto-generated API reference from code comments.
+4. **Single maintainer** - If the maintainer becomes unavailable, development stops. This is a risk for any organization depending on the ecosystem. Mitigation: codebase is MIT-licensed and publicly available on GitHub; any developer could fork and continue.
 
-5. **Single maintainer** - If the maintainer becomes unavailable, development stops. This is a risk for any organization depending on the ecosystem. Mitigation: codebase is MIT-licensed and publicly available on GitHub; any developer could fork and continue.
+5. **Small user community** - Traditional ecosystems rely on community for support (Stack Overflow, forums). With AI-assisted development, the AI itself provides support during development. The DbC contracts serve as executable documentation. Community size matters less when AI + contracts replace traditional support channels.
 
-6. **Small user community** - Traditional ecosystems rely on community for support (Stack Overflow, forums). With AI-assisted development, the AI itself provides support during development. The DbC contracts serve as executable documentation. Community size matters less when AI + contracts replace traditional support channels.
-
-7. **Limited job market** - Eiffel positions are uncommon. Context: No language ecosystem started with abundant jobs. Python (1991), Java (1995), and JavaScript (1995) all began with zero market demand. Market demand follows demonstrated value. The job market observation is factual but applies to any emerging or niche technology.
+6. **Limited job market** - Eiffel positions are uncommon. Context: No language ecosystem started with abundant jobs. Python (1991), Java (1995), and JavaScript (1995) all began with zero market demand. Market demand follows demonstrated value. The job market observation is factual but applies to any emerging or niche technology.
 
 ---
 
@@ -192,7 +190,7 @@ All 51 repositories include:
 - 8 of 51 repositories (16%) are empty placeholders - at the measured 4,911 LOC/day production rate, this represents approximately 1-2 weeks of development to complete
 - No automated CI/CD pipeline
 - No cross-platform distribution (Windows only)
-- No auto-generated API documentation
+- Complete API documentation (~55,000 HTML files across 43 libraries)
 - Single maintainer (mitigated by MIT license and public GitHub availability)
 
 ---
