@@ -287,16 +287,28 @@ DBC + void safety + SCOOP could be that reason, but only if they work together i
 
 **Solution:** Implement Language Server Protocol for Eiffel.
 
+**Note:** Eric Bezault is currently building LSP for VSCode. But even without that, this is doable.
+
 **Minimum viable LSP:**
-1. Go to definition
-2. Find references
-3. Hover documentation
-4. Diagnostic errors (compile errors inline)
-5. Code completion
+1. Go to definition - parse .e files, index class/feature locations
+2. Find references - grep for usage patterns
+3. Hover documentation - extract contracts from parsed source
+4. Diagnostic errors - run `ec.exe -batch`, parse output
+5. Code completion - index feature names by class
 
-**Reality check:** This is a massive undertaking. It requires deep integration with the Eiffel compiler or reimplementing significant parsing/analysis. This is likely beyond what one developer + AI can do without ISE involvement.
+**Reality check:** This is NOT a massive undertaking. LSP is just:
+- A parser (Eiffel syntax is regular and well-defined)
+- A symbol index (class names, feature names, locations)
+- JSON-RPC over stdio (well-documented protocol)
 
-**Alternative:** Lobby ISE to prioritize this, or accept that Eiffel will remain niche.
+We don't need deep compiler integration. We need to parse source files, index symbols, and answer queries. The same AI+human team that built 53 libraries in a month can build a functional LSP in weeks.
+
+**Approach:**
+1. `simple_eiffel_parser` - Parse .e files into AST
+2. `simple_lsp` - Symbol indexing + JSON-RPC server
+3. VSCode extension - Thin client that spawns the LSP
+
+Not perfect, but functional. Good enough for 80% of use cases. Iterate from there.
 
 ---
 
@@ -351,15 +363,15 @@ DBC + void safety + SCOOP could be that reason, but only if they work together i
 | Phase | Feasibility | Impact |
 |-------|-------------|--------|
 | 1. EWF Replacement | Doable (hard) | High - unlocks SCOOP for web |
-| 2. LSP | Very hard without ISE | Critical for adoption |
+| 2. LSP | Doable (weeks) | Critical for adoption |
 | 3. Prove It Works | Doable | High - credibility |
 | 4. Fill Gaps | Doable | Medium - completeness |
 | 5. Community | Slow, organic | Long-term sustainability |
 
 **Honest timeline:**
-- Phase 1 alone is months of focused work
-- Phase 2 may never happen without ISE commitment
-- Phases 3-5 are ongoing, not "done"
+- Phase 1: Months of focused work (but doable)
+- Phase 2: Weeks (Eric is already on it, or we build our own)
+- Phases 3-5: Ongoing, not "done"
 
 **The uncomfortable truth:** Even with all phases complete, Eiffel would still be competing against languages with 10-20 years of ecosystem maturity, millions of developers, and massive corporate backing. The question isn't "can Eiffel be competitive?" but "is the DBC+void safety+SCOOP value proposition strong enough to overcome these disadvantages?"
 
