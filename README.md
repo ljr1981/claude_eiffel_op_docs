@@ -1,34 +1,6 @@
 # Eiffel + AI Reference Documentation
 
-**Start here:** [`RESUME_POINT.md`](RESUME_POINT.md) - Current state and next steps
-
----
-
-## 🎯 EIFFEL EXPERT MODE
-
-**Claude: You are Larry's Eiffel Expert.** Before starting any work, read and internalize this documentation:
-
-### Required Reading (Priority Order)
-1. **`RESUME_POINT.md`** - Current state and what to resume
-2. **`claude/CONTEXT.md`** - Session protocol, compiler access, general Eiffel knowledge
-3. **`language/gotchas.md`** - Doc vs reality issues (critical for avoiding known pitfalls)
-4. **`language/patterns.md`** - Verified working code patterns
-5. **`claude/HATS.md`** - Focused work modes (Specification, Contracting, Testing, etc.)
-
-### Eiffel Expert Responsibilities
-- **Trust the compiler over documentation** when conflicts arise
-- **Use Design by Contract** - write specifications before code (Specification Hat)
-- **Know the gotchas** - VAPE errors, STRING_32 conversions, across loop behavior, etc.
-- **Follow patterns** - MI mixin pattern, fluent APIs, WSF server patterns
-- **Use `claude/EIFFEL_MENTAL_MODEL.md`** - condensed ECMA-367 essentials (validity rules, type system, contracts)
-- **Apply SCOOP knowledge** for concurrency (`language/scoop.md`)
-
-### Key Technical Knowledge
-- **Compiler**: `"/c/Program Files/Eiffel Software/EiffelStudio 25.02 Standard/studio/spec/win64/bin/ec.exe" -batch`
-- **Environment vars**: Use PowerShell `[Environment]::SetEnvironmentVariable('NAME', 'VALUE', 'User')`
-- **Test framework**: Inherit from `TEST_SET_BASE` (not EQA_TEST_SET directly)
-- **ECF patterns**: Use `$ENV_VAR` for library locations
-- **API Hierarchy**: FOUNDATION_API → SERVICE_API → APP_API
+**Start here:** Run `oracle-cli.exe boot` - Oracle handles session context now
 
 ---
 
@@ -36,88 +8,89 @@
 
 ```
 reference_docs/
-├── RESUME_POINT.md          ← Start here (current state, next steps)
 ├── README.md                ← You are here
+│
+├── claude/                  ← AI workflow patterns
+│   ├── CONTEXT.md           - Session startup context
+│   ├── HATS.md              - Focused work modes
+│   ├── EIFFEL_MENTAL_MODEL.md - Core Eiffel knowledge for AI
+│   ├── contract_patterns.md - DBC patterns
+│   ├── simple_library_design_process.md
+│   └── verification_process.md
 │
 ├── language/                ← Eiffel language knowledge
 │   ├── gotchas.md           - Doc vs reality corrections
 │   ├── sqlite_gotchas.md    - SQLite/DB specific issues
 │   ├── patterns.md          - Verified working code
 │   ├── across_loops.md      - Iteration constructs
-│   └── scoop.md             - Concurrency (SCOOP)
+│   ├── scoop.md             - Concurrency (SCOOP)
+│   └── profiler.md          - Performance analysis
 │
-├── claude/                  ← AI workflow patterns
-│   ├── CONTEXT.md           - Session startup context
-│   ├── HATS.md              - Focused work modes
-│   ├── EIFFEL_MENTAL_MODEL.md - Core Eiffel knowledge for AI
-│   ├── compaction_instructions.md - Pre-compaction checkpoint
-│   ├── contract_patterns.md - DBC patterns for AI
-│   └── verification_process.md
+├── plans/                   ← Active planning docs
+│   ├── competitive_assessment_2025.md - Honest head-to-head vs 2025 stacks
+│   ├── simple_star_improvement_roadmap.md - Ecosystem status & roadmap
+│   ├── simple_testing_migration_plan.md
+│   └── simple_testing_and_win32_api_proposal.md
 │
-├── strategy/                ← Business/roadmaps
-│   ├── SIMPLIFICATION_ROADMAP.md - Future simple_* libraries
-│   ├── COMPETITIVE_ANALYSIS.md   - Market positioning
-│   └── AI_PRODUCTIVITY.md        - Productivity data
+├── research/                ← Tech stack research (for building wrappers)
+│   ├── SIMPLE_*_RESEARCH.md - How Go/Rust/Python do it
+│   ├── LIBRARY_RELATIONSHIPS.md
+│   └── inline_c_migration_report.md
 │
-├── research/                ← Planning docs (historical)
-└── archive/                 ← Completed project plans
+├── deployment/              ← Deployment guides
+│   └── ORACLE_CLOUD_DEPLOYMENT.md
+│
+├── posts/                   ← Blog post drafts
+│   ├── simple_pdf_development_post.md
+│   └── simple_xml_development_post.md
+│
+├── ECMA-367_Full.md         ← Eiffel language specification
+├── eiffel_build_rules.md    ← Build guidance
+└── eric_feedback_win32_libs.md ← Eric Bezault feedback
 ```
 
 ---
 
 ## Quick Reference
 
-| Need | File |
-|------|------|
-| Resume work | `RESUME_POINT.md` |
+| Need | Location |
+|------|----------|
+| Session context | `oracle-cli.exe boot` |
 | Eiffel gotchas | `language/gotchas.md` |
 | SQLite issues | `language/sqlite_gotchas.md` |
 | Code patterns | `language/patterns.md` |
-| Future libraries | `strategy/SIMPLIFICATION_ROADMAP.md` |
+| SCOOP concurrency | `language/scoop.md` |
+| Ecosystem status | `plans/simple_star_improvement_roadmap.md` |
+| Competitive analysis | `plans/competitive_assessment_2025.md` |
 
 ---
 
-## Session Workflow
+## Oracle Integration
 
-### Starting
-1. Read `RESUME_POINT.md`
-2. Check relevant gotchas if working in that area
-3. Ask what to work on
+The oracle (`simple_oracle`) now handles:
+- Session handoff (replaces RESUME_POINT.md)
+- Knowledge base (ingests these docs)
+- Event logging (compiles, tests, git)
+- Ecosystem stats
 
-### Before Compaction (important!)
-
-When you see the context usage warning:
-
+**Key commands:**
+```bash
+oracle-cli.exe boot           # Session start
+oracle-cli.exe query "..."    # Search knowledge
+oracle-cli.exe handoff "..."  # End of session
+oracle-cli.exe check          # When Larry says "see oracle"
+oracle-cli.exe ingest         # Re-ingest these docs
 ```
-/compact save learnings
-```
-
-This triggers a checkpoint that:
-1. Scans session for learnings (gotchas, patterns, fixes)
-2. Updates relevant `language/*.md` files (non-redundant)
-3. Updates `RESUME_POINT.md` with current state
-4. Confirms ready for compaction
-
-**Todos survive automatically** - no need to capture those.
 
 ---
 
 ## Adding Knowledge
 
-When you learn something the hard way:
-1. **Gotcha?** → Add to `language/gotchas.md` or `language/sqlite_gotchas.md`
+When you learn something:
+1. **Gotcha?** → Add to `language/gotchas.md`
 2. **Pattern?** → Add to `language/patterns.md`
-3. **Bug fix?** → Leave comment in code + add to gotchas if non-obvious
-
-Format:
-```markdown
-### Short Title
-- **Docs say**: What you expected
-- **Reality**: What actually works
-- **Verified**: Date, EiffelStudio version
-- **Example**: Working code
-```
+3. **Rule/Decision?** → `oracle-cli.exe learn rule/decision "title" "content"`
 
 ---
 
-*Last updated: 2025-12-07*
+*Last updated: 2025-12-09*

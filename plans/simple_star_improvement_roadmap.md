@@ -1,14 +1,29 @@
 # simple_* Improvement Roadmap
 
 **Date:** December 7, 2025
-**Based on:** simple_ecosystem_assessment.md
+**Updated:** December 9, 2025
+**Based on:** simple_ecosystem_assessment.md + oracle stats
 
 ---
 
-## Phase 1: Foundation Hardening (Critical)
+## Current Ecosystem Status
 
-### Step 1.1: Standardize ECF Capabilities
-Every simple_* library needs explicit capability declarations:
+| Metric | Value |
+|--------|-------|
+| Libraries | 53 |
+| Classes | 2,178 |
+| Features (API surface) | 63,342 |
+| DBC: Preconditions | 31% |
+| DBC: Postconditions | 49% |
+| SCOOP Compliance | 100% (53/53) |
+| Docs Compliance | 98% (52/53) |
+
+---
+
+## Phase 1: Foundation Hardening ✅ COMPLETE
+
+### Step 1.1: Standardize ECF Capabilities ✅
+All 53 libraries now have explicit capability declarations:
 
 ```xml
 <capability>
@@ -17,140 +32,73 @@ Every simple_* library needs explicit capability declarations:
 </capability>
 ```
 
-**Libraries requiring updates:**
-- simple_csv
-- simple_datetime
-- simple_hash
-- simple_json
-- simple_logger
-- simple_markdown
-- simple_xml
-- simple_process
+### Step 1.2: Void-Safety ✅
+All libraries are void-safe by default. This is the Eiffel baseline - not optional.
 
-### Step 1.2: Void-Safety Audit
-Compile each library with `void_safety support="all"` and fix any errors:
-- Add `attached` keywords where needed
-- Use `detachable` for truly optional values
-- Fix all VEVI/VJAR/VUTA errors
-
-### Step 1.3: Create Docs for Every Library
-Each library gets a manifest file:
-
-```
-package simple_json
-
-project
-    simple_json = "simple_json.ecf"
-
-note
-    title: Simple JSON
-    description: "High-level JSON parsing for Eiffel"
-    collection: simple
-    tags: json,parser,builder
-    license: MIT
-    link[source]: https://github.com/ljr1981/simple_json
-
-end
-```
+### Step 1.3: Documentation ✅
+52/53 libraries have full docs (README.md, CHANGELOG.md, docs/index.html).
+- simple_oracle pending (not yet on GitHub)
 
 ---
 
-## Phase 2: SCOOP Support
+## Phase 2: SCOOP Support ✅ COMPLETE
 
-### Step 2.1: ECF Capability Configuration
-All libraries are void-safe by default. Use capability settings to declare SCOOP support:
+All 53 libraries have SCOOP capability declarations.
 
-```xml
-<capability>
-    <concurrency support="scoop" use="thread"/>
-    <void_safety support="all"/>
-</capability>
-```
-
-This declares:
-- `support="scoop"` - Library is SCOOP-compatible
-- `use="thread"` - Default to thread concurrency (consumer can override)
-- `void_safety support="all"` - Void-safe (non-negotiable baseline)
-
-**Note:** The `-safe.ecf` variant pattern is outdated. Void-safety is expected, not optional.
-
-### Step 2.2: Priority Libraries for SCOOP
-1. simple_json (most used)
-2. simple_logger (concurrent logging)
-3. simple_cache (thread-safe caching)
-4. simple_sql (connection pooling)
+**Runtime SCOOP Blocker:** simple_http and simple_web depend on ISE's EWF (Eiffel Web Framework), which is not SCOOP-compatible. See Phase 7 for resolution.
 
 ---
 
-## Phase 3: Missing Wrapper Libraries
+## Phase 3: Wrapper Libraries ✅ COMPLETE
 
-### Step 3.1: simple_http
-Wrap `http_client` contrib library:
-```eiffel
--- Target API
-http.get ("https://api.example.com/users").json
-http.post (url).body (json).send
-http.with_header ("Authorization", token).get (url)
-```
+All planned wrapper libraries have been created:
 
-### Step 3.2: simple_encryption
-Wrap `eel` (Eiffel Encryption Library):
-```eiffel
--- Target API
-encrypt (plaintext, key)
-decrypt (ciphertext, key)
-aes_256_encrypt (data, key, iv)
-```
+| Library | Status | Notes |
+|---------|--------|-------|
+| simple_http | ✅ Created | Currently wraps http_client (EWF dependency) |
+| simple_encryption | ✅ Created | Wraps eel |
+| simple_compression | ✅ Created | Wraps zlib |
+| simple_config | ✅ Created | Unified configuration |
+| simple_cli | ✅ Created | Argument parsing |
+| simple_archive | ✅ Created | Archive operations |
+| simple_i18n | ✅ Created | Internationalization |
+| simple_mongo | ✅ Created | MongoDB client |
 
-### Step 3.3: simple_compression
-Wrap `wsf_compression` or zlib:
-```eiffel
--- Target API
-gzip (data): STRING
-gunzip (compressed): STRING
-deflate (data): STRING
-```
-
-### Step 3.4: simple_config
-Unified configuration loading:
-```eiffel
--- Target API
-config.load_env (".env")
-config.load_yaml ("config.yml")
-config.get ("database.host")
-config.get_or_default ("port", "8080")
-```
+**Additional libraries created beyond original plan:**
+- simple_ai_client, simple_alpine, simple_app_api, simple_ci
+- simple_clipboard, simple_console, simple_env, simple_file
+- simple_foundation_api, simple_gui_designer, simple_ipc
+- simple_mmap, simple_oracle, simple_registry, simple_service_api
+- simple_showcase, simple_system, simple_watcher, simple_win32_api
 
 ---
 
-## Phase 4: Distribution via simple_setup + INNO
+## Phase 4: Distribution ✅ COMPLETE
 
-> Note: Iron (iron.eiffel.com) has been discontinued. Distribution is now via simple_setup CLI and INNO Setup installer.
+### Step 4.1: simple_setup Package Manager ✅
+- CLI tool for installing individual libraries
+- Environment variable management
+- Library manifest with all 53 libraries
 
-### Step 4.1: simple_setup Package Manager (COMPLETE)
-1. ✓ CLI tool for installing individual libraries
-2. ✓ Environment variable management
-3. ✓ Library manifest with all 50+ libraries
+### Step 4.2: INNO Setup Installer ✅
+- Windows installer generation
+- Full ecosystem bundle install
+- Available at: https://github.com/simple-eiffel/simple_setup
 
-### Step 4.2: INNO Setup Installer (COMPLETE)
-1. ✓ Windows installer generation
-2. ✓ Full ecosystem bundle install
-3. ✓ Available at: https://github.com/simple-eiffel/simple_setup
-
-### Step 4.3: GitHub Organization
-- ✓ All libraries published to https://github.com/simple-eiffel
-- ✓ GitHub Pages documentation enabled
+### Step 4.3: GitHub Organization ✅
+- All libraries published to https://github.com/simple-eiffel
+- GitHub Pages documentation enabled
 
 ---
 
-## Phase 5: CI/CD Pipeline
+## Phase 5: CI/CD Pipeline 🔲 NOT STARTED
 
 ### Step 5.1: GitHub Actions Workflow
 ```yaml
 - Compile with void_safety="all"
 - Compile with concurrency="scoop"
 - Run all tests
-- Validate Docs
+- Validate docs
 ```
 
 ### Step 5.2: Quality Gates
@@ -161,75 +109,145 @@ config.get_or_default ("port", "8080")
 
 ---
 
-## Phase 6: Documentation Standards
+## Phase 6: Documentation Standards ✅ MOSTLY COMPLETE
 
-### Step 6.1: Every Library Gets
-- README.md (standardized format)
-- docs/index.html
-- docs/css/style.css
-- docs/images/logo.png
-- CHANGELOG.md
+### Step 6.1: Every Library Gets ✅
+- README.md (standardized format) - 53/53
+- docs/index.html - 52/53
+- CHANGELOG.md - 52/53
+
+**Missing:** simple_oracle (not yet on GitHub)
 
 ### Step 6.2: API Documentation
-- Generate from code comments
-- Include usage examples for every public feature
+- Generated via EiffelStudio -short command
+- Documentation folders created for most libraries
 
 ---
 
-## Execution Priority
+## Phase 7: EWF Replacement 🔲 NEW - HIGH PRIORITY
 
-| Priority | Task | Impact |
+**Goal:** Untether simple_http and simple_web from ISE's EWF to enable true SCOOP compatibility.
+
+### Current Problem
+- simple_http depends on: `net_http_client`
+- simple_web depends on: `wsf`, `httpd`, `standalone`, `encoder`, `wsf_all`
+- EWF is not SCOOP-compatible, blocking concurrent web applications
+
+### Solution
+Rewrite simple_http and simple_web with our own implementation:
+- HTTP server using inline C for Win32 sockets
+- Request parsing and response writing
+- Routing and middleware
+- Full SCOOP compatibility
+- No ISE contrib dependencies
+
+### Benefits
+- Full control over implementation
+- SCOOP-native concurrency
+- Matches ecosystem pattern (inline C, no external .obj files)
+- Removes last ISE dependency outside base/time/testing
+
+---
+
+## Phase 8: Oracle Enhancement 🔲 NEW
+
+### Planned Commands
+- `sync` - Commit and push all repos with changes (replace sync_all_repos.sh)
+- `docs` - Generate API documentation (replace generate_api_docs.sh)
+- `status` period filtering (bug fix)
+
+### Current Oracle Capabilities
+- boot, query, log, compile, test, git, commits
+- status, stats, scan, ingest, learn, handoff, check
+
+---
+
+## Execution Priority (Updated)
+
+| Priority | Task | Status |
 |----------|------|--------|
-| P0 | ECF capability standardization | Prevents undefined behavior |
-| P0 | Void-safety audit | Production safety |
-| P1 | simple_setup manifest | Enables distribution |
-| P1 | simple_http wrapper | Most requested feature |
-| P2 | SCOOP variants | Concurrent applications |
-| P2 | GitHub Pages docs | Discoverability |
-| P3 | CI/CD pipeline | Quality enforcement |
-| P3 | Additional wrappers | Ecosystem completeness |
+| ~~P0~~ | ~~ECF capability standardization~~ | ✅ Done |
+| ~~P0~~ | ~~Void-safety audit~~ | ✅ Done (default) |
+| ~~P1~~ | ~~simple_setup manifest~~ | ✅ Done |
+| ~~P1~~ | ~~simple_http wrapper~~ | ✅ Done |
+| ~~P2~~ | ~~SCOOP declarations~~ | ✅ Done |
+| ~~P2~~ | ~~GitHub Pages docs~~ | ✅ Done |
+| P1 | **EWF replacement** | 🔲 New priority |
+| P2 | CI/CD pipeline | 🔲 Not started |
+| P2 | Oracle enhancements | 🔲 Planned |
+| P3 | simple_oracle GitHub + docs | 🔲 Pending |
 
 ---
 
-## Library-by-Library Checklist
+## Library Inventory (53 Total)
 
-| Library | ECF Fixed | Void-Safe | SCOOP | Docs | GitHub Docs |
-|---------|-----------|-----------|-------|--------------|----------------|
-| simple_base64 | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_cache | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_cors | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_csv | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_datetime | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_hash | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_htmx | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_json | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_jwt | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_logger | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_markdown | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_pdf | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_process | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_randomizer | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_rate_limiter | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_regex | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_smtp | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_sql | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_template | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_uuid | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_validation | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_websocket | [ ] | [ ] | [ ] | [ ] | [ ] |
-| simple_xml | [ ] | [ ] | [ ] | [ ] | [ ] |
+All libraries have: ECF ✅ | Void-Safe ✅ | SCOOP ✅ | README ✅
+
+| Library | CHANGELOG | docs/index.html | Notes |
+|---------|-----------|-----------------|-------|
+| simple_ai_client | ✅ | ✅ | |
+| simple_alpine | ✅ | ✅ | |
+| simple_app_api | ✅ | ✅ | |
+| simple_archive | ✅ | ✅ | |
+| simple_base64 | ✅ | ✅ | |
+| simple_cache | ✅ | ✅ | |
+| simple_ci | ✅ | ✅ | |
+| simple_cli | ✅ | ✅ | |
+| simple_clipboard | ✅ | ✅ | |
+| simple_compression | ✅ | ✅ | |
+| simple_config | ✅ | ✅ | |
+| simple_console | ✅ | ✅ | |
+| simple_cors | ✅ | ✅ | |
+| simple_csv | ✅ | ✅ | |
+| simple_datetime | ✅ | ✅ | |
+| simple_encryption | ✅ | ✅ | |
+| simple_env | ✅ | ✅ | |
+| simple_file | ✅ | ✅ | |
+| simple_foundation_api | ✅ | ✅ | |
+| simple_gui_designer | ✅ | ✅ | |
+| simple_hash | ✅ | ✅ | |
+| simple_htmx | ✅ | ✅ | |
+| simple_http | ✅ | ✅ | EWF dependency |
+| simple_i18n | ✅ | ✅ | |
+| simple_ipc | ✅ | ✅ | |
+| simple_json | ✅ | ✅ | |
+| simple_jwt | ✅ | ✅ | |
+| simple_logger | ✅ | ✅ | |
+| simple_markdown | ✅ | ✅ | |
+| simple_mmap | ✅ | ✅ | |
+| simple_mongo | ✅ | ✅ | |
+| simple_oracle | ❌ | ❌ | Not on GitHub yet |
+| simple_pdf | ✅ | ✅ | |
+| simple_process | ✅ | ✅ | |
+| simple_randomizer | ✅ | ✅ | |
+| simple_rate_limiter | ✅ | ✅ | |
+| simple_regex | ✅ | ✅ | |
+| simple_registry | ✅ | ✅ | |
+| simple_service_api | ✅ | ✅ | |
+| simple_setup | ✅ | ✅ | |
+| simple_showcase | ✅ | ✅ | |
+| simple_smtp | ✅ | ✅ | |
+| simple_sql | ✅ | ✅ | |
+| simple_system | ✅ | ✅ | |
+| simple_template | ✅ | ✅ | |
+| simple_testing | ✅ | ✅ | |
+| simple_uuid | ✅ | ✅ | |
+| simple_validation | ✅ | ✅ | |
+| simple_watcher | ✅ | ✅ | |
+| simple_web | ✅ | ✅ | EWF dependency |
+| simple_websocket | ✅ | ✅ | |
+| simple_win32_api | ✅ | ✅ | |
+| simple_xml | ✅ | ✅ | |
 
 ---
 
-## New Libraries to Create
+## Summary
 
-| Library | Wraps | Priority |
-|---------|-------|----------|
-| simple_http | http_client | P1 |
-| simple_encryption | eel | P2 |
-| simple_compression | wsf_compression/zlib | P2 |
-| simple_config | preferences | P2 |
-| simple_cli | argument_parser | P3 |
-| simple_archive | etar | P3 |
-| simple_i18n | i18n | P3 |
-| simple_mongo | mongo | P3 |
+**Completed:** Phases 1-4, 6 (98%)
+**In Progress:** Phase 7 (EWF replacement), Phase 8 (Oracle)
+**Not Started:** Phase 5 (CI/CD)
+
+The ecosystem is production-ready for most use cases. The main remaining work is:
+1. Replacing EWF dependency for true SCOOP web applications
+2. Adding CI/CD for automated quality enforcement
+3. Completing simple_oracle GitHub publication
