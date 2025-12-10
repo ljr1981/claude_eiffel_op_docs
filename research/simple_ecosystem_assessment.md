@@ -11,7 +11,7 @@ The simple_* collection contains 55 Git repositories under the simple-eiffel Git
 
 Distribution is via simple_setup CLI and INNO installer (Windows). All libraries are configured for void-safety and SCOOP concurrency.
 
-**New in v1.1.0:** VS Code IDE support via simple_lsp - full Language Server Protocol implementation with go-to-definition, hover, completion, rename, and build commands.
+**New in v1.1.0:** VS Code IDE support via simple_lsp - MVP Language Server Protocol implementation with go-to-definition, hover, completion, rename, and build commands.
 
 ---
 
@@ -73,6 +73,12 @@ Industry baseline for production code: 10-50 LOC/day (varies by source).
 |----------|------------|
 | 50 LOC/day | 107x |
 | 25 LOC/day | 215x |
+
+**Caveats on productivity claims:**
+- No independent verification of these metrics
+- LOC counts include all .e files (tests, examples, generated code)
+- "Industry baseline" sources vary widely; comparison has limited validity
+- Quality metrics (defect rate, maintainability) not measured
 
 ### Comparison Context
 
@@ -146,8 +152,9 @@ Additional LSP features:
 ### Testing
 
 - 52/55 repositories have test targets
-- Pass rates vary by library
+- **No systematic test pass/fail tracking** - tests run manually, no metrics collected
 - No automated CI/CD pipeline
+- No code coverage measurement
 
 ---
 
@@ -216,9 +223,16 @@ Additional LSP features:
 - SCOOP concurrency declared in all libraries
 - Functional Windows installer with VS Code integration
 - Complete README and CHANGELOG coverage
-- Measured production rate of 107x industry baseline
-- Full IDE support via Language Server Protocol
-- Runtime contracts in production binaries for precise diagnostics
+- MVP IDE support via Language Server Protocol
+- Runtime contracts in production binaries for diagnostics
+
+### What We Don't Have (Honest Assessment)
+- No performance benchmarks
+- No code coverage metrics
+- No defect tracking
+- No independent code review
+- No user testing beyond maintainer
+- No formal quality metrics of any kind
 
 ### Current Limitations
 - 1 of 55 repositories (2%) is empty placeholder
@@ -234,14 +248,14 @@ Additional LSP features:
 | Empty | 8 | 1 | -7 |
 | Lines of code | 132,607 | 155,872 | +23,265 |
 | LOC/day | 4,911 | 5,374 | +463 |
-| IDE Support | None | Full LSP | New |
+| IDE Support | None | LSP MVP | New |
 
 ---
 
 ## Part 7: New Libraries (Since Dec 8)
 
 ### simple_lsp (4,461 lines)
-Full Language Server Protocol implementation for VS Code:
+MVP Language Server Protocol implementation for VS Code:
 - Handler architecture (hover, completion, navigation, rename)
 - EIFGENs metadata parsing for inheritance and type info
 - SQLite symbol database
