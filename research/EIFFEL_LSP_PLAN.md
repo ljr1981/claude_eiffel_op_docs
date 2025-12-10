@@ -67,6 +67,41 @@ VS Code spawns simple_lsp.exe which handles:
 | **Call Hierarchy** | Low | View incoming/outgoing calls for any feature |
 | **Type Hierarchy** | Low | Visualize inheritance relationships |
 
+### Phase 2.5: EIFGENs Metadata Integration (NEW - Ulrich's Suggestion)
+
+When ISE EiffelStudio compiles a system, it generates rich metadata in C source files that we can parse for accurate semantic information. This enables a **hybrid approach**:
+
+- **Parser mode**: Works on incomplete/broken code during active editing
+- **Compiler mode**: Uses EIFGENs metadata for accurate semantic queries after successful build
+
+| Feature | Priority | Description |
+|---------|----------|-------------|
+| **EIFGENs Detection** | High | Detect valid compiled output in EIFGENs folder |
+| **eparents.c Parser** | High | Extract class hierarchy and inheritance chains |
+| **evisib.c Parser** | High | Extract complete class name table |
+| **enames.c Parser** | Medium | Extract feature names per class |
+| **eskelet.c Parser** | Medium | Extract attribute types |
+| **Hybrid Symbol Resolution** | Medium | Merge parser + compiler data intelligently |
+| **Timestamp Validation** | Medium | Check if compilation is newer than sources |
+
+**Key files in `EIFGENs/<target>/W_code/E1/`:**
+
+| File | Contents |
+|------|----------|
+| `eparents.c` | 1000+ classes with inheritance hierarchy (ptf arrays) |
+| `enames.c` | Feature names indexed by class ID |
+| `eskelet.c` | Attribute type info (SK_REF, SK_BOOL, SK_INT32) |
+| `evisib.c` | type_key[] array with all class names |
+| `ecall.c` | Routine dispatch tables |
+
+**Benefits:**
+- Accurate inheritance chains (vs. parser guessing)
+- Resolved generic types
+- Complete feature dispatch information
+- Type-accurate hover information
+
+**See:** `reference_docs/research/EIFGENS_METADATA_DESIGN.md` for full design
+
 ### Phase 3: Advanced Features
 
 | Feature | Description |
@@ -109,12 +144,25 @@ Leveraging other simple_* libraries for powerful features:
 | **Test Runner Integration** | simple_testing | Run tests from VS Code, show coverage |
 | **Build System** | simple_process | Compile from VS Code, show errors inline |
 
+**Oracle + EIFGENs Integration:**
+
+The Oracle can leverage compiled metadata for cross-project analysis:
+
+| Oracle Feature | Description |
+|----------------|-------------|
+| `scan-compiled <path>` | Ingest EIFGENs metadata into Oracle knowledge base |
+| `class-info <name>` | Show compiled class details (type index, parents, features) |
+| `ancestors <name>` | Display full inheritance chain from compiler data |
+| `query "inherited features"` | Natural language queries against compiled metadata |
+| Cross-project aggregation | Which classes are most commonly inherited across ecosystem? |
+
 ### Phase 6: Visionary Features (Research)
 
 Ideas we're exploring that could revolutionize Eiffel development:
 
 | Vision | Description |
 |--------|-------------|
+| **Pick-and-Drop for VS Code** | EiffelStudio's revolutionary interaction model in VS Code (see below) |
 | **Contract-Driven Completion** | Suggest code that satisfies postconditions |
 | **Invariant-Aware Refactoring** | Ensure refactorings preserve class invariants |
 | **SCOOP Visualization** | Show separate object communication graph |
@@ -123,6 +171,37 @@ Ideas we're exploring that could revolutionize Eiffel development:
 | **Oracle-Powered Search** | Natural language queries: "find all features that modify balance" |
 | **Cross-Session Learning** | LSP learns your patterns, suggests based on history |
 | **Collaborative Contracts** | Share contract templates across team/organization |
+
+#### Pick-and-Drop for VS Code
+
+EiffelStudio's Pick-and-Drop is a unique interaction paradigm:
+- Right-click **picks** an entity (class, feature, type)
+- Cursor changes to show you're "carrying" something
+- Right-click on target **drops** with context-aware action
+
+**VS Code Implementation Concept:**
+
+```
+Ctrl+Shift+P  → Pick entity under cursor
+Status bar    → Shows "🎯 Carrying: SIMPLE_JSON"
+Ctrl+Shift+D  → Drop at cursor location (context-aware)
+```
+
+| Pick | Drop On | Action |
+|------|---------|--------|
+| Class | Editor | Insert class name |
+| Class | Inherit clause | Add inheritance |
+| Feature | Editor | Insert feature call with signature template |
+| Feature | Create clause | Add as creation procedure |
+| Class | Feature param | Set as parameter type |
+| Type | Result line | Set return type |
+| Feature | require block | Insert as precondition |
+
+**Implementation approach:**
+1. Extension maintains "picked entity" state
+2. Status bar shows what you're carrying
+3. Drop command queries LSP for valid drop actions
+4. CodeActions provide context-aware drop options
 
 ### Platform Support Roadmap
 
