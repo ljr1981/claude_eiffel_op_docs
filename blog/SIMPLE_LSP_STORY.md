@@ -20,7 +20,7 @@ Meanwhile, Rust developers have rust-analyzer. TypeScript has tsserver. Go has g
 
 Eiffel? Nothing. Despite being one of the most thoughtfully designed languages ever created—the birthplace of Design by Contract—it's been stuck in the past when it comes to tooling.
 
-Eric Bezault built something for Gobo Eiffel, but for standard EiffelStudio users? You either use EiffelStudio or you suffer.
+Eric Bezault has built an excellent VS Code extension (implemented with Gobo Eiffel) that works with any Eiffel code - not just Gobo projects. His extension already provides go-to-definition, hover, diagnostics, and even live updates on unsaved files. We wanted to explore a different approach using our simple_* ecosystem.
 
 We decided to fix that.
 

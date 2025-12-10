@@ -91,6 +91,10 @@ Features that leverage Eiffel's unique Design by Contract capabilities:
 | **Feature Origin Tracking** | Show which ancestor introduced/redefined a feature |
 | **Catcall Detection** | Highlight potential catcall violations |
 | **Once Status** | Show once feature values and initialization status |
+| **Implicit Code Lens** | Make implicit code explicit: `create x` → `create x.default_create`, `a := b` → `a := b.to_a` (conversions), `a.x := b` → `a.set_x (b)`, `my_agent.call (x)` → `my_agent.call ([x])` |
+| **Contract View** | Display flat contract view showing all inherited require/ensure/invariant |
+| **Client View** | Show only exported features visible to a specific client class |
+| **Live Editing** | Update symbols and diagnostics for unsaved file changes in real-time |
 
 ### Phase 5: simple_* Ecosystem Integration
 
@@ -352,9 +356,9 @@ Tools: DB Browser for SQLite (GUI), sqlite3 CLI, VS Code SQLite Extension
 
 ---
 
-## Notes on Eric Bezault's Gobo Extension
+## Notes on Eric Bezault's Extension
 
-Eric has built a Gobo Eiffel VS Code extension with deep compiler integration.
+Eric has built an Eiffel VS Code extension (implemented with Gobo Eiffel) that works with any Eiffel code.
 Our approach is simpler/faster but less accurate for complex inheritance.
 Consider contributing to Eric's extension if full semantic accuracy is required.
 
