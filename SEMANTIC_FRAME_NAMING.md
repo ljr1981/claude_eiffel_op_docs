@@ -512,6 +512,78 @@ When a class like `SIMPLE_JSON_VALUE` is used by 14+ client libraries across div
 
 This is the case for our priority refactor targets: `simple_json`, `simple_process`, `simple_sql`, etc.
 
+### Genericity and Semantic Range
+
+Generic parameters act as a **semantic lens** - they focus an otherwise unbounded class into a specific domain.
+
+| Expression | Semantic Range |
+|------------|----------------|
+| `ARRAYED_LIST [G]` | Unbounded - any list of anything |
+| `ARRAYED_LIST [ACCOUNT]` | Lists within ACCOUNT's semantic scope |
+| `ARRAYED_LIST [BANK_ACCOUNT]` | Lists within banking domain specifically |
+
+**The principle**: Feature names must respect the semantic range of the enfolding class.
+
+- Classes at the bottom of hierarchies (most specific) have the greatest semantic reach - they can extend vocabulary into their specific domain
+- Ancestors bump into the semantic ranges of their descendants - they must stay neutral
+- Generic parameters constrain or expand this range based on their bounds
+
+#### Unconstrained Generics: Stay Maximally Generic
+
+An unconstrained generic class knows nothing about what it holds:
+
+```eiffel
+class CONTAINER [G]
+feature
+    item: G           -- Generic: correct
+    value: G          -- Generic: correct
+    account: G        -- Domain-specific: WRONG (G could be anything)
+```
+
+The container should use vocabulary that makes sense regardless of what `G` turns out to be.
+
+#### Constrained Generics: Vocabulary Reflects the Constraint
+
+A constrained generic *knows* something about its parameter:
+
+```eiffel
+class ACCOUNT_REGISTRY [G -> ACCOUNT]
+feature
+    accounts,
+    entries,
+    members: ARRAYED_LIST [G]
+        -- All valid: G is constrained to ACCOUNT's semantic scope
+        attribute end
+
+    primary_account,
+    default_entry,
+    active_member: detachable G
+        -- Domain vocabulary is appropriate here
+        attribute end
+```
+
+The constraint `G -> ACCOUNT` pulls the host class's semantic range into ACCOUNT's domain. Feature names can legitimately use ACCOUNT-related vocabulary.
+
+#### Multiple Constraints
+
+With multiple constraints, the semantic range is the intersection:
+
+```eiffel
+class AUDITABLE_ACCOUNT_STORE [G -> {ACCOUNT, AUDITABLE}]
+```
+
+This class operates in the semantic intersection of accounts AND auditable things. Feature names can draw from both domains.
+
+#### Semantic Range Summary
+
+| Class Type | Semantic Range | Vocabulary Style |
+|------------|----------------|------------------|
+| Unconstrained generic `[G]` | Unbounded | Maximally generic |
+| Constrained generic `[G -> X]` | X's domain | X's vocabulary valid |
+| Multiple constraints `[G -> {X, Y}]` | Intersection of X and Y | Both vocabularies valid |
+| Concrete class | Its specific domain | Domain-specific |
+| Abstract ancestor | Union of descendants | Must stay neutral |
+
 ## Best Practices
 
 ### DO
