@@ -584,6 +584,350 @@ This class operates in the semantic intersection of accounts AND auditable thing
 | Concrete class | Its specific domain | Domain-specific |
 | Abstract ancestor | Union of descendants | Must stay neutral |
 
+## Other Language Constructs Affecting Semantic Naming
+
+Beyond inheritance and genericity, several Eiffel constructs influence how we think about feature naming semantics.
+
+### Agents: Functional Context
+
+When features are used as agents, they shift into a functional/callback context:
+
+```eiffel
+my_list.do_all (agent print_item)
+button.on_click (agent handle_click)
+```
+
+**Naming implications:**
+- Action-oriented names work well: `process`, `handle`, `transform`
+- Consider both direct call and agent contexts when naming
+- Aliases can provide both: `process_item, item_processor: ...`
+
+```eiffel
+process_item,
+item_processor,      -- Reads better in: agent item_processor
+handle_record,
+record_handler: PROCEDURE [TUPLE [ITEM]]
+```
+
+### Once Functions: Singleton/Cached Semantics
+
+Once functions return the same value after first computation. Names should suggest this persistence:
+
+```eiffel
+shared_config,
+global_config,
+config_instance: SIMPLE_CONFIG
+    once
+        create Result.make
+    end
+
+cached_connection,
+connection_pool,
+db_connection: DATABASE_CONNECTION
+    once
+        create Result.make
+    end
+```
+
+**Naming patterns:**
+- `shared_X`, `global_X` - emphasizes shared nature
+- `X_instance`, `the_X` - singleton pattern
+- `cached_X` - emphasizes memoization
+- Avoid names suggesting fresh creation: `new_X`, `create_X`
+
+### Deferred vs Effective: Abstract to Concrete
+
+Deferred features are promises - they define *what* without *how*. Names should stay abstract:
+
+```eiffel
+deferred class SERIALIZABLE
+feature
+    -- GOOD: Abstract vocabulary
+    serialize,
+    to_external_format,
+    export_data: STRING
+        deferred end
+
+    -- BAD: Implementation-specific vocabulary in deferred
+    to_json: STRING      -- What if descendant serializes to XML?
+        deferred end
+```
+
+Effective (implementing) features can be more concrete:
+
+```eiffel
+class JSON_DOCUMENT
+inherit
+    SERIALIZABLE
+feature
+    serialize,
+    to_external_format,
+    export_data,
+    to_json,            -- Now appropriate: we know it's JSON
+    as_json_string: STRING
+        do
+            -- JSON-specific implementation
+        end
+```
+
+**The pattern**: Deferred = abstract vocabulary. Effective = can add concrete aliases.
+
+### Export Policies: Public vs Private Vocabulary
+
+Export status affects appropriate vocabulary:
+
+```eiffel
+feature {NONE} -- Implementation
+
+    internal_buffer,
+    scratch_space,
+    temp_storage: STRING
+        -- Private: implementation vocabulary OK
+
+    raw_process,
+    unsafe_modify: ...
+        -- Private: can expose "dangerous" operations
+
+feature -- Public API
+
+    content,
+    value,
+    data: STRING
+        -- Public: clean, domain-appropriate vocabulary
+        do
+            Result := internal_buffer
+        end
+```
+
+**Principle**: Private features can use implementation vocabulary. Public features should use domain vocabulary.
+
+### Rename in Inheritance: The Old Way
+
+Rename is Eiffel's existing mechanism for semantic frame shifts:
+
+```eiffel
+class BANK_ACCOUNT
+inherit
+    ACCOUNT
+        rename
+            name as account_holder,
+            identifier as account_number
+        end
+```
+
+**Our pattern reduces need for this** by pre-salting names in the supplier. But rename remains valuable for:
+- Third-party libraries you can't modify
+- Resolving name clashes in multiple inheritance
+- Legacy code integration
+
+### Redefine: Same Name, Different Semantics
+
+When you redefine a feature, the name stays but behavior changes. This is a semantic shift that should be documented:
+
+```eiffel
+class PREMIUM_ACCOUNT
+inherit
+    ACCOUNT
+        redefine
+            calculate_fee
+        end
+feature
+    calculate_fee: DECIMAL
+            -- Redefined: Premium accounts get 50% discount
+        note
+            semantic_shift: "Applies premium discount vs standard calculation"
+        do
+            Result := Precursor * 0.5
+        end
+```
+
+**Naming consideration**: If redefinition significantly changes semantics, consider whether the name still fits. The name is a promise about behavior.
+
+### Preconditions and Postconditions: Contract Vocabulary
+
+Contracts have their own naming conventions:
+
+```eiffel
+set_value (v: INTEGER)
+    require
+        value_non_negative: v >= 0
+        value_in_range: v <= maximum
+        not_frozen: not is_locked
+    do
+        internal_value := v
+    ensure
+        value_set: value = v
+        value_updated: value /= old value or v = old value
+        still_valid: is_valid
+```
+
+**Contract naming patterns:**
+- `X_valid`, `valid_X` - validation checks
+- `X_exists`, `has_X` - existence checks
+- `not_X`, `X_not_Y` - negation
+- `X_set`, `X_updated` - postcondition state changes
+- `result_X` - postconditions about Result
+
+Consider aliases that work in both feature and contract contexts:
+
+```eiffel
+is_valid,
+valid,
+satisfies_invariant: BOOLEAN
+
+has_content,
+not_empty,
+content_exists: BOOLEAN
+```
+
+### Creation Procedures: Factory Semantics
+
+Creation procedures have established conventions:
+
+```eiffel
+create {SIMPLE_CONFIG}
+    make,
+    make_empty,
+    make_with_file,
+    make_from_string,
+    make_from_json
+```
+
+**Standard patterns:**
+- `make` - default creation
+- `make_X` - creation with specific input
+- `make_from_X` - conversion/parsing creation
+- `make_with_X` - creation with dependency injection
+
+**Semantic frame aliases for creation:**
+
+```eiffel
+make_with_file,
+load_from_file,      -- Config frame
+parse_file,          -- Parser frame
+open: ...            -- File frame
+```
+
+### Conversion: Type Bridge Vocabulary
+
+Convert features bridge between types:
+
+```eiffel
+class SIMPLE_DECIMAL
+convert
+    to_string: {STRING},
+    to_real: {REAL_64},
+    make_from_string ({STRING})
+feature
+    to_string,
+    as_string,
+    string_value: STRING
+
+    to_real,
+    as_real,
+    real_value,
+    to_double,
+    double_value: REAL_64
+```
+
+**Conversion naming patterns:**
+- `to_X` - explicit conversion
+- `as_X` - view/cast semantics
+- `X_value` - accessor style
+- Provide aliases for different mental models
+
+### Expanded Types: Value Semantics
+
+Expanded types have value (copy) semantics vs reference semantics. Names might reflect this:
+
+```eiffel
+expanded class POINT
+    -- Value type: each variable has its own copy
+
+class POINT_REF
+    -- Reference type: variables can share
+
+feature
+    x, horizontal, h: INTEGER
+    y, vertical, v: INTEGER
+```
+
+For libraries offering both:
+
+```eiffel
+point,
+point_value,
+location: POINT          -- Expanded, copied
+
+point_ref,
+point_reference,
+shared_point: POINT_REF  -- Reference, shared
+```
+
+### Separate (SCOOP): Concurrency Context
+
+SCOOP's `separate` keyword introduces concurrency semantics:
+
+```eiffel
+feature
+    async_process,
+    request_processing,
+    queue_for_processing (item: separate ITEM)
+        -- Name suggests asynchronous nature
+
+    sync_result,
+    await_result,
+    blocking_fetch: RESULT
+        -- Name suggests waiting/blocking
+
+    concurrent_items,
+    shared_collection,
+    thread_safe_list: separate LIST [ITEM]
+```
+
+**SCOOP naming considerations:**
+- Indicate async nature: `async_X`, `request_X`, `queue_X`
+- Indicate blocking: `await_X`, `sync_X`, `blocking_X`
+- Indicate thread-safety: `concurrent_X`, `shared_X`, `thread_safe_X`
+
+### Frozen: Final/Locked Semantics
+
+Frozen features cannot be redefined. Names might indicate this finality:
+
+```eiffel
+frozen core_algorithm,
+frozen fundamental_process,
+frozen locked_behavior: ...
+    -- Implementation is fixed, not overridable
+
+frozen standard_hash,
+frozen immutable_id: INTEGER
+    -- Value is architecturally fixed
+```
+
+**When to alias frozen features:**
+- When the frozen behavior has domain-specific meanings
+- When different clients conceptualize the fixed behavior differently
+
+### Construct Impact Summary
+
+| Construct | Semantic Impact | Naming Guidance |
+|-----------|-----------------|-----------------|
+| **Agents** | Functional context | Action verbs, `X_handler` aliases |
+| **Once** | Singleton/cached | `shared_X`, `cached_X`, avoid `new_X` |
+| **Deferred** | Abstract promise | Abstract vocabulary only |
+| **Effective** | Concrete implementation | Can add concrete aliases |
+| **Export {NONE}** | Private implementation | Implementation vocabulary OK |
+| **Export public** | Public API | Domain vocabulary required |
+| **Rename** | Frame shift mechanism | Our pattern reduces need |
+| **Redefine** | Behavior change | Document semantic shift |
+| **Contracts** | Validation vocabulary | `valid_X`, `has_X`, `X_set` |
+| **Creation** | Factory semantics | `make_X`, `make_from_X` |
+| **Convert** | Type bridging | `to_X`, `as_X`, `X_value` |
+| **Expanded** | Value semantics | May need `_value` vs `_ref` aliases |
+| **Separate** | Concurrency | `async_X`, `shared_X`, `concurrent_X` |
+| **Frozen** | Final behavior | Indicates non-overridable |
+
 ## Best Practices
 
 ### DO
