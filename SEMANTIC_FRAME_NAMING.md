@@ -968,3 +968,77 @@ This is not syntactic sugar - it's a fundamental improvement in how libraries co
 
 *Part of the Simple Eiffel ecosystem documentation.*
 *Pattern developed through AI-human collaborative insight, December 2025.*
+
+---
+
+## Lessons from Practice: simple_json Refactor
+
+### The Two-Phase Workflow
+
+**Phase 1: Pre-Salt the Supplier**
+Add semantic aliases to the supplier class features. This is non-breaking - existing code continues to work.
+
+**Phase 2: Refactor Client Consumers**  
+Walk through each client library and update calls to use context-appropriate aliases. Compile and test after each client.
+
+### Feature-Level Semantic Context
+
+**Critical Insight**: Semantic framing operates at the *feature level*, not just the *class level*.
+
+Within a single client class, different features may have different semantic contexts when calling the same supplier:
+
+```eiffel
+class HTTP_CLIENT
+
+feature -- Request building
+    send_request
+        do
+            -- Building outbound JSON: "encode" semantic
+            body := json.new_object  -- or json.build_object
+        end
+
+feature -- Response handling  
+    handle_response (a_body: STRING)
+        do
+            -- Parsing inbound JSON: "decode" semantic
+            data := json.decode_payload (a_body)
+        end
+end
+```
+
+The same `SIMPLE_JSON` supplier is called, but the semantic context differs by feature purpose.
+
+### Real-World Mapping from simple_json Refactor
+
+| Client Library | Feature Context | Original Call | Semantic Alias |
+|----------------|-----------------|---------------|----------------|
+| simple_config | Loading config files | `parse_file` | `load_config` |
+| simple_http | Decoding HTTP response | `parse` | `decode_payload` |
+| simple_ai_client | Parsing AI API response | `parse` | `parse_response` |
+| simple_ai_client | Deserializing embeddings | `parse` | `deserialize` |
+| simple_web (response) | Decoding HTTP body | `parse` | `decode_payload` |
+| simple_web (request) | Decoding request body | `parse` | `decode_payload` |
+| simple_lsp | Parsing JSON-RPC message | `parse` | `parse_message` |
+| simple_sql | Deserializing stored JSON | `parse` | `deserialize` |
+| simple_codec | Format conversion | `parse` | `decode` |
+| simple_ci | Loading CI config | `parse` | `load_config` |
+| simple_showcase | Decoding HTTP request | `parse` | `decode_payload` |
+
+### Patterns Observed
+
+1. **Config contexts** gravitate toward: `load_config`, `read_settings`
+2. **HTTP/API contexts** gravitate toward: `decode_payload`, `decode`, `encode`
+3. **Serialization contexts** gravitate toward: `serialize`, `deserialize`
+4. **Message/protocol contexts** gravitate toward: `parse_message`, `encode_message`
+5. **AI/LLM contexts** gravitate toward: `parse_response`, `parse_completion`
+
+### The Compile-Test Loop
+
+For each client:
+1. `sed` or edit to change calls to semantic aliases
+2. Clean compile (`rm -rf EIFGENs && ec.exe -batch ...`)
+3. Run tests
+4. Log to oracle
+5. Move to next client
+
+This systematic approach ensures no regressions while improving semantic clarity across the ecosystem.
