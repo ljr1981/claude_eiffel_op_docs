@@ -401,6 +401,117 @@ feature -- Content
         end
 ```
 
+## Inheritance and Semantic Frames
+
+### The Principle: Names Flow Toward Specificity
+
+Inheritance represents a **semantic frame shift** - the descendant class operates in a more specific context than its ancestor. This has clear implications for where multi-name features belong:
+
+| Class Level | Semantic Scope | Name Style |
+|-------------|----------------|------------|
+| **Ancestor** | Generic, abstract | Domain-neutral: `name`, `value`, `identifier` |
+| **Descendant** | Specific, concrete | Domain-specific: `account_holder`, `gamertag`, `handle` |
+
+**Generic ancestors stay generic. Specialized descendants add specialized vocabulary.**
+
+### Single Inheritance
+
+When `BANK_ACCOUNT` inherits from `ACCOUNT`:
+
+```eiffel
+class ACCOUNT
+feature
+    name: STRING_32   -- Generic: stays here
+```
+
+```eiffel
+class BANK_ACCOUNT
+inherit
+    ACCOUNT
+feature
+    account_holder: STRING_32
+            -- Banking frame name for inherited `name`
+        do
+            Result := name
+        end
+```
+
+Or, if the ancestor is being designed with semantic frames in mind:
+
+```eiffel
+class ACCOUNT
+feature
+    name,
+    account_holder,    -- Available for banking descendants
+    username,          -- Available for auth descendants
+    gamertag: STRING_32
+        attribute end
+```
+
+The descendant then simply uses the appropriate name without wrapping.
+
+### Multiple Inheritance: Frame Convergence
+
+Multiple inheritance is particularly interesting - the descendant class is literally **combining semantic frames**. It becomes the convergence point where those frames meet.
+
+```eiffel
+class AUTHENTICATED_BANK_CUSTOMER
+inherit
+    BANK_ACCOUNT      -- Banking frame
+    USER_IDENTITY     -- Auth frame
+    AUDIT_SUBJECT     -- Compliance frame
+```
+
+This descendant naturally needs vocabulary from all three frames. It's the right place to add bridging names that unify concepts across the inherited frames.
+
+### Where to Add Names: Decision Guide
+
+| Scenario | Add Names To |
+|----------|--------------|
+| Generic library class used in many contexts | **Supplier class** (pre-salt for common frames) |
+| Abstract ancestor with known specializations | **Ancestor** (if frames are predictable) |
+| Specialized descendant in specific domain | **Descendant** (domain-specific vocabulary) |
+| Multiple inheritance convergence | **Descendant** (bridging vocabulary) |
+| One dominant usage pattern across ecosystem | **Supplier** (optimize for common case) |
+
+### Avoiding Pollution
+
+**Don't** add domain-specific names to generic ancestors that shouldn't know about those domains:
+
+```eiffel
+-- BAD: ACCOUNT shouldn't know about gaming
+class ACCOUNT
+feature
+    name,
+    gamertag,           -- Why does ACCOUNT know about gaming?
+    battle_net_id,      -- This is domain pollution
+    steam_username: STRING_32
+```
+
+**Do** let descendants introduce their domain vocabulary:
+
+```eiffel
+-- GOOD: GAME_PROFILE knows about gaming
+class GAME_PROFILE
+inherit
+    ACCOUNT
+feature
+    gamertag,
+    battle_net_id,
+    steam_username: STRING_32
+        do Result := name end
+```
+
+### Exception: High Fan-In Suppliers
+
+When a class like `SIMPLE_JSON_VALUE` is used by 14+ client libraries across diverse semantic frames, pre-salting at the supplier level makes pragmatic sense:
+
+- The class is already "aware" of multiple contexts through its widespread use
+- Adding frame vocabulary reduces friction across the entire ecosystem
+- The alternative (each client wrapping or renaming) creates more pollution
+
+This is the case for our priority refactor targets: `simple_json`, `simple_process`, `simple_sql`, etc.
+
 ## Best Practices
 
 ### DO
@@ -409,6 +520,9 @@ feature -- Content
 - Document each alias with its frame context in feature notes
 - Keep the original/generic name as the first in the list
 - Consider the actual library dependency graph for realistic frames
+- Let generic ancestors stay generic
+- Add specialized names in specialized descendants
+- Pre-salt high fan-in suppliers for ecosystem-wide benefit
 
 ### DON'T
 - Remove existing feature names (breaking change)
@@ -416,6 +530,7 @@ feature -- Content
 - Forget to document the semantic context
 - Add names for hypothetical frames with no real use case
 - Create ambiguous names that could mean different things
+- Pollute generic ancestors with domain-specific vocabulary they shouldn't know about
 
 ## Measuring Success
 
