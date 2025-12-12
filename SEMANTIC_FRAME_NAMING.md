@@ -1087,48 +1087,50 @@ x := 10
 y := 20  -- These are DIFFERENT variables!
 ```
 
-### The Solution: Wrap with Getter/Setter Routines
+### The Solution: Wrap with Query and Command Routines
 
-To achieve semantic aliasing for attributes, wrap the actual attribute with aliased getter and setter routines:
+To achieve semantic aliasing for attributes, wrap the actual attribute with aliased query (read) and command (write) routines.
+
+**Important terminology**: Eiffel discourages "get_*" naming. Queries are named for *what they return*, not the action of getting. Commands use "set_*" because it describes the action being performed.
 
 ```eiffel
 feature {NONE} -- Internal storage
 
-    x: INTEGER
+    internal_x: INTEGER
             -- The actual storage (hidden from clients)
 
-feature -- Access (aliased getters)
+feature -- Access (aliased queries)
 
-    get_x,
-    get_y,
-    get_value: like x
-            -- Read access with semantic aliases
+    x_value,
+    horizontal,
+    x_coordinate: like internal_x
+            -- Named for what it IS, not "get_x"
         do
-            Result := x
+            Result := internal_x
         end
 
-feature -- Modification (aliased setters)
+feature -- Modification (aliased commands)
 
     set_x,
-    set_y,
-    set_value (a_value: like x)
-            -- Write access with semantic aliases
+    set_horizontal,
+    set_x_coordinate (a_value: like internal_x)
+            -- Commands use "set_" - describes the action
         do
-            x := a_value
+            internal_x := a_value
         ensure
-            value_set: x = a_value
+            value_set: internal_x = a_value
         end
 ```
 
 ### Export Control Considerations
 
-Note that the actual attribute `x` can be hidden with `feature {NONE}` to:
+The actual attribute `internal_x` can be hidden with `feature {NONE}` to:
 
 1. Prevent direct client access to the storage
 2. Force all access through the aliased routines
 3. Allow future implementation changes without breaking clients
 
-However, the class itself can still use `x` directly for internal operations. The aliased getters/setters are the public interface.
+The class itself can still use `internal_x` directly for internal operations. The aliased queries/commands are the public interface.
 
 Alternatively, if you want the attribute directly accessible:
 
@@ -1138,10 +1140,10 @@ feature -- Access
     x: INTEGER
             -- The actual storage (visible to clients)
 
-    get_x,
-    get_y,
-    get_value: like x
-            -- Aliased read access (same value as x)
+    x_value,
+    horizontal,
+    x_coordinate: like x
+            -- Aliased query access (same value as x)
         do
             Result := x
         end
@@ -1149,10 +1151,26 @@ feature -- Access
 
 The choice depends on whether you want to expose the "raw" attribute name alongside the semantic aliases.
 
+### A Note on "Getter/Setter" Terminology
+
+The terms "getter" and "setter" come from Java/C# conventions and are prevalent in programming literature. However, they don't align with Eiffel's semantic approach:
+
+| Java/C# Pattern | Eiffel Pattern |
+|-----------------|----------------|
+| `getX()` | Query named for what it returns: `x_value`, `horizontal` |
+| `setX(v)` | Command: `set_x(v)` is acceptable |
+| "getter/setter pair" | Query/Command separation (different concepts) |
+
+In Eiffel, we follow the **Command-Query Separation** principle:
+- **Queries** answer questions (return values, no side effects)
+- **Commands** perform actions (may have side effects, no return value)
+
+Naming queries as "get_*" conflates "what it is" with "how you get it" - a subtle but important distinction.
+
 ### Summary
 
 | Declaration | Result |
 |-------------|--------|
 | `x, y: INTEGER` | **TWO separate attributes** |
-| `get_x, get_y: INTEGER do ... end` | **ONE routine with two names** |
-| Attribute + wrapped routines | **Proper semantic aliasing for attributes**
+| `x_value, horizontal: INTEGER do ... end` | **ONE query with two names** |
+| Attribute + wrapped query/command | **Proper semantic aliasing for attributes**
