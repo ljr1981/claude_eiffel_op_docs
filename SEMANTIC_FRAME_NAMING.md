@@ -1042,3 +1042,117 @@ For each client:
 5. Move to next client
 
 This systematic approach ensures no regressions while improving semantic clarity across the ecosystem.
+
+---
+
+## Critical Caveat: Routines Only, Not Attributes
+
+### Eric Bezault's Warning
+
+**WARNING**: Eiffel's multi-name syntax only works for **routines**, not attributes.
+
+When you write:
+
+```eiffel
+x, y: INTEGER
+```
+
+You get **two separate attributes**, not two names for the same attribute. Each is independent storage.
+
+This is fundamentally different from:
+
+```eiffel
+get_value,
+fetch,
+retrieve (a_key: STRING): STRING
+    do
+        Result := internal_table.item (a_key)
+    end
+```
+
+Here, `get_value`, `fetch`, and `retrieve` are truly three names for ONE routine.
+
+### Expanded Types Compound the Issue
+
+For expanded types (`INTEGER`, `REAL_64`, `BOOLEAN`, `CHARACTER`), this is especially problematic because:
+
+1. They have **value semantics** - each variable holds its own copy
+2. There are no reference semantics to accidentally share
+3. `x` and `y` in `x, y: INTEGER` are completely independent storage
+
+So even if you *thought* you were creating aliases, you'd have two separate integers that could diverge:
+
+```eiffel
+x := 10
+y := 20  -- These are DIFFERENT variables!
+```
+
+### The Solution: Wrap with Getter/Setter Routines
+
+To achieve semantic aliasing for attributes, wrap the actual attribute with aliased getter and setter routines:
+
+```eiffel
+feature {NONE} -- Internal storage
+
+    x: INTEGER
+            -- The actual storage (hidden from clients)
+
+feature -- Access (aliased getters)
+
+    get_x,
+    get_y,
+    get_value: like x
+            -- Read access with semantic aliases
+        do
+            Result := x
+        end
+
+feature -- Modification (aliased setters)
+
+    set_x,
+    set_y,
+    set_value (a_value: like x)
+            -- Write access with semantic aliases
+        do
+            x := a_value
+        ensure
+            value_set: x = a_value
+        end
+```
+
+### Export Control Considerations
+
+Note that the actual attribute `x` can be hidden with `feature {NONE}` to:
+
+1. Prevent direct client access to the storage
+2. Force all access through the aliased routines
+3. Allow future implementation changes without breaking clients
+
+However, the class itself can still use `x` directly for internal operations. The aliased getters/setters are the public interface.
+
+Alternatively, if you want the attribute directly accessible:
+
+```eiffel
+feature -- Access
+
+    x: INTEGER
+            -- The actual storage (visible to clients)
+
+    get_x,
+    get_y,
+    get_value: like x
+            -- Aliased read access (same value as x)
+        do
+            Result := x
+        end
+```
+
+The choice depends on whether you want to expose the "raw" attribute name alongside the semantic aliases.
+
+### Summary
+
+| Declaration | Result |
+|-------------|--------|
+| `x, y: INTEGER` | **TWO separate attributes** |
+| `get_x, get_y: INTEGER do ... end` | **ONE routine with two names** |
+| Attribute + wrapped routines | **Proper semantic aliasing for attributes**
