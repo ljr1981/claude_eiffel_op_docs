@@ -133,7 +133,7 @@ export SIMPLE_DOCKER=/path/to/simple_docker
 | Unix socket support | Linux/macOS via simple_ipc cross-platform |
 | Image building | `build_image` with tar context from simple_archive |
 
-### Finish Line Criteria
+### Finish Line Criteria (P6)
 
 | Metric | Target | Current |
 |--------|--------|---------|
@@ -142,6 +142,72 @@ export SIMPLE_DOCKER=/path/to/simple_docker
 | Cross-platform | Windows + Linux | Windows Done |
 | Documentation | IUARC 5-doc | Done |
 | Production apps | 1+ real deployment | Pending |
+
+---
+
+## Beyond P6: The Extended Vision
+
+### Phase 7: Remote & Platform Expansion
+
+| Feature | Description |
+|---------|-------------|
+| Remote Docker Host (TLS) | Connect to remote Docker daemons with mutual TLS authentication |
+| Windows Native Containers | Windows Server containers (not WSL2/Linux) |
+| Full Streaming Support | Real-time logs, build output, attach with multiplexed I/O |
+
+### Phase 8: simple_kubernetes
+
+Kubernetes container orchestration for Eiffel, leveraging the official [Kubernetes C client](https://github.com/kubernetes-client/c).
+
+```eiffel
+-- Future: Kubernetes deployment
+create k8s.make_with_kubeconfig ("~/.kube/config")
+k8s.apply_deployment (my_deployment_spec)
+```
+
+### Phase 9: CI/CD Integration (simple_ci)
+
+Full pipeline integration for containerized builds and deployments:
+
+```eiffel
+-- Build Eiffel app in container
+container := docker.run_container (
+    create {CONTAINER_SPEC}.make_with_image ("eiffel/eiffel:latest")
+        .with_volume (project_path, "/app")
+        .with_command ("ec -config my_app.ecf -c_compile")
+)
+docker.wait_for (container)
+if container.exit_code = 0 then
+    docker.build_image (dockerfile, "my-app:latest")
+    docker.push_image ("my-app:latest", registry_auth)
+end
+```
+
+### Cloud Registry Support (P6-P7)
+
+| Provider | Auth Method | Token Validity |
+|----------|-------------|----------------|
+| Docker Hub | OAuth 2.0 bearer tokens | Session-based |
+| GitHub Container Registry | PAT or GITHUB_TOKEN | Configurable |
+| AWS ECR | `aws ecr get-login-password` | 12 hours |
+| Azure ACR | `az acr login` | 3 hours |
+| Google GCR | Service account JSON | Configurable |
+
+---
+
+## The Full Journey
+
+| Phase | Status | Scope |
+|-------|--------|-------|
+| P1 | Done | Core containers & images |
+| P2 | Done | Networks, volumes, exec, Dockerfile builder |
+| P3 | Tomorrow | Performance (streaming, pooling, timeouts) |
+| P4 | Done | Documentation (IUARC 5-doc) |
+| P5 | Done | Tests (38 passing) |
+| P6 | Next | COMPOSE_BUILDER, registry auth, templates |
+| P7 | Future | Remote TLS, Windows native containers |
+| P8 | Future | simple_kubernetes |
+| P9 | Future | Full CI/CD integration with simple_ci |
 
 ---
 
