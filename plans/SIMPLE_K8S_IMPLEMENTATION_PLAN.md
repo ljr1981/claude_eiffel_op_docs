@@ -982,3 +982,14 @@ cd /d/prod/simple_k8s
 | `D:\prod\simple_json\src\core\simple_json.e` | JSON parsing |
 | `D:\prod\simple_yaml\src\simple_yaml.e` | YAML parsing |
 | `D:\prod\simple_testing\src\test_set_base.e` | Test base class |
+
+
+### K8S_CI_QUICK Addition
+
+Add to Phase 4 (Week 4):
+
+| Class | Purpose | Priority |
+|-------|---------|----------|
+| K8S_CI_QUICK | CI pipeline operations with exit codes | P1 |
+
+File: src/util/k8s_ci_quick.e

@@ -1200,3 +1200,55 @@ Full control with spec classes (POD_SPEC, DEPLOYMENT_SPEC, SERVICE_SPEC).
 ### Tier 3: Low-Level
 
 Direct HTTP: api_get(), api_post(), api_patch(), api_delete(), custom_resource()
+
+
+### Tier 1.6: K8S_CI_QUICK (CI Pipeline Operations)
+
+Specifically designed for CI/CD pipelines with exit codes and failure handling.
+
+**Features:**
+- All operations exit(1) on failure (CI-friendly)
+- Built-in timeouts
+- Automatic rollback on failure
+- Structured output for CI logs
+- Environment variable configuration
+
+**Operations:**
+- deploy_or_fail(deployment, image)
+- deploy_canary_or_fail(deployment, image, percentage)
+- promote_or_fail(deployment)
+- abort_or_fail(deployment)
+- scale_or_fail(deployment, replicas)
+- wait_ready_or_fail(deployment, timeout)
+- smoke_test_or_fail(test_image, timeout)
+
+**Usage in GitHub Actions:**
+```yaml
+- name: Deploy
+  run: ./deployer deploy-or-fail myapp $${{ github.sha }}
+```
+
+**Usage in GitLab CI:**
+```yaml
+deploy:
+  script:
+    - ./deployer deploy-canary-or-fail myapp $$CI_COMMIT_SHA 10
+    - ./deployer promote-or-fail myapp
+```
+
+**Class Summary:**
+```
+K8S_CI_QUICK
+  deploy_or_fail (deployment, image)
+  deploy_canary_or_fail (deployment, image, percentage)
+  progressive_or_fail (deployment, image)
+  promote_or_fail (deployment)
+  abort_or_fail (deployment)
+  rollback_or_fail (deployment)
+  scale_or_fail (deployment, replicas)
+  wait_ready_or_fail (deployment, timeout)
+  smoke_test_or_fail (test_image, timeout)
+  blue_green_or_fail (service, image, version)
+```
+
+All methods print structured status messages and call die(1) on failure.
