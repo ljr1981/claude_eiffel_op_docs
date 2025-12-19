@@ -1,6 +1,6 @@
 # Eiffel REPL & Interpreter Research
 
-**Research Date:** December 2024
+**Research Date:** December 2025
 **Purpose:** Investigate feasibility of interactive Eiffel execution for EiffelNotebook
 **Requested by:** Larry Rix
 
@@ -820,6 +820,6 @@ These could be built and used to understand the bytecode format better.
 
 ---
 
-*Document generated: December 2024*
-*Updated: December 2024 - Added bytecode internals from source analysis*
+*Document generated: December 2025*
+*Updated: December 2025 - Added bytecode internals from source analysis*
 *Status: Research Complete*
