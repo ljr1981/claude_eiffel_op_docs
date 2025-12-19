@@ -224,15 +224,173 @@ eiffel_notebook --port 8080
 - Full IDE replacement
 - Support for non-Eiffel languages
 
+## Alternative Path: VS Code + Jupyter Kernel
+
+*Suggested by Mischa Megens - December 2024*
+
+VS Code has become the dominant interface for Jupyter notebooks. Rather than building a custom HTML/HTMX frontend, we could leverage VS Code's native notebook support by creating an **Eiffel Jupyter Kernel**.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────┐
+│  VS Code                                            │
+│  ┌───────────────────────────────────────────────┐  │
+│  │  Native Notebook UI (.ipynb)                  │  │
+│  │  - Cell editing with Eiffel syntax            │  │
+│  │  - simple_lsp for completion/hover/DBC       │  │
+│  │  - Run button per cell                        │  │
+│  └───────────────────────────────────────────────┘  │
+└──────────────────────┬──────────────────────────────┘
+                       │ Jupyter Protocol (ZMQ/WebSocket)
+┌──────────────────────▼──────────────────────────────┐
+│  Eiffel Jupyter Kernel                              │
+│                                                     │
+│  - Receives code cells                              │
+│  - Maintains accumulated class state                │
+│  - Compiles via ec (melting)                        │
+│  - Returns stdout/stderr/results                    │
+│  - Handles kernel lifecycle (restart, interrupt)   │
+│                                                     │
+│  Libraries: simple_process, simple_json,            │
+│             simple_websocket (for ZMQ replacement)  │
+└─────────────────────────────────────────────────────┘
+```
+
+### Advantages Over Custom UI
+
+| Custom HTML/HTMX | VS Code + Kernel |
+|------------------|------------------|
+| Build our own notebook UI | Reuse mature notebook UI |
+| Learn HTMX/Alpine patterns | Users know VS Code already |
+| simple_lsp integration: custom | simple_lsp integration: native |
+| Single executable | Requires VS Code installed |
+| Works offline anywhere | Works offline with VS Code |
+| Full control over UX | Constrained to VS Code UX |
+
+### Jupyter Kernel Protocol
+
+A Jupyter kernel must implement:
+
+1. **Shell channel** - Execute requests, completions, inspection
+2. **IOPub channel** - Output streams (stdout, stderr, display_data)
+3. **Stdin channel** - Input requests (rarely used)
+4. **Control channel** - Shutdown, interrupt
+5. **Heartbeat channel** - Liveness check
+
+The protocol uses ZeroMQ (ZMQ) for messaging. Options:
+- Wrap libzmq via inline C in Eiffel
+- Use WebSocket alternative (some Jupyter clients support this)
+- Implement minimal ZMQ subset needed for local kernels
+
+### Kernel Specification File
+
+VS Code discovers kernels via `kernel.json`:
+
+```json
+{
+  "argv": [
+    "/path/to/eiffel_kernel",
+    "--connection-file", "{connection_file}"
+  ],
+  "display_name": "Eiffel 25.02",
+  "language": "eiffel",
+  "interrupt_mode": "signal"
+}
+```
+
+### Implementation Phases
+
+**Phase 1: Minimal Kernel**
+- [ ] Implement Jupyter wire protocol (shell + iopub)
+- [ ] Execute cells via accumulated class pattern
+- [ ] Return stdout/stderr as stream messages
+
+**Phase 2: Rich Features**
+- [ ] `execute_result` with formatted output
+- [ ] `is_complete_request` for multi-line input detection
+- [ ] Kernel info (language_info, banner)
+
+**Phase 3: LSP Integration**
+- [ ] `complete_request` → proxy to simple_lsp
+- [ ] `inspect_request` → hover info from simple_lsp
+- [ ] Error locations mapped to cell line numbers
+
+### Comparison: Build vs Use
+
+| Approach | Effort | Result |
+|----------|--------|--------|
+| **Custom EiffelNotebook** | High (UI + server + persistence) | Standalone, zero deps |
+| **VS Code Kernel** | Medium (protocol + execution) | Integrated, familiar UX |
+| **Both** | Higher | Maximum flexibility |
+
+### Recommendation
+
+Start with **VS Code kernel** because:
+1. VS Code is already popular for Eiffel (via simple_lsp)
+2. Jupyter protocol is well-documented
+3. No frontend development required
+4. Can reuse accumulated class execution model
+5. simple_lsp integration comes "for free"
+
+The custom HTML/HTMX notebook remains valuable for:
+- Environments without VS Code
+- Embedded documentation/tutorials
+- Showcasing simple_* library ecosystem
+
+Both can share the same **Eiffel execution engine** (accumulated class + melting).
+
+### Research: EiffelStudio Debugger Evaluation Engine
+
+*Noted by Larry - December 2024*
+
+The EiffelStudio debugger already has expression evaluation capabilities:
+- Evaluate expressions against live objects
+- Immediate window for code execution
+- Object inspection at runtime
+
+**Question:** Can the debugger's evaluation engine be invoked programmatically or via command-line? If so, this could bypass the "accumulated class + recompile" approach entirely:
+
+| Current Plan | Debugger Eval (if possible) |
+|--------------|----------------------------|
+| Generate class from cells | Send expression to eval engine |
+| Compile via `ec` | Already parsed/compiled context |
+| Run executable | Evaluate in running session |
+| Capture stdout | Get result directly |
+
+**To investigate:**
+- [ ] EiffelStudio command-line debugger options (`ec -debug`?)
+- [ ] Debugger protocol/API (if any)
+- [ ] How the "Immediate" window works internally
+- [ ] Whether evaluation can happen without breakpoint/pause
+
+This could dramatically simplify the kernel implementation if viable.
+
+### Parser Requirements
+
+For interactive cell execution, simple_eiffel_parser needs enhancement:
+
+| Current | Needed for Notebooks |
+|---------|---------------------|
+| `parse_string` (full class) | `parse_feature_standalone` |
+| — | `parse_expression` |
+| — | `parse_instructions` |
+| — | `classify_input` (declaration vs code vs markdown) |
+
+The lexer infrastructure exists; grammar entry points need extension.
+
 ## Related Work
 
 - [Jupyter Notebook](https://jupyter.org/) - Inspiration
 - [Observable](https://observablehq.com/) - Reactive notebooks
 - [Livebook](https://livebook.dev/) - Elixir notebooks
+- [xeus](https://github.com/jupyter-xeus/xeus) - C++ Jupyter kernel framework
+- [Jupyter Client](https://jupyter-client.readthedocs.io/) - Protocol documentation
 
 ---
 
 *Document created: 2024-12-18*
+*Updated: 2024-12-18 - Added VS Code + Jupyter Kernel section (Mischa suggestion)*
 *Status: Vision / Planning*
 
 ## Historical Context
