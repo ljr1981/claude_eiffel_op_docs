@@ -539,5 +539,287 @@ For reference, these features must be implemented by any compliant interpreter:
 
 ---
 
+## 14. Appendix: EiffelStudio Bytecode Internals (Source Analysis)
+
+**Source:** GitHub mirror at `github.com/EiffelSoftware/EiffelStudio` (GPL v2.0)
+
+This section documents the internal architecture of EiffelStudio's Melting Ice bytecode interpreter, derived from direct source code analysis.
+
+### 14.1 Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    EiffelStudio Runtime                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐     │
+│   │   IC        │    │  op_stack   │    │     iregs       │     │
+│   │ (Interpreter│    │ (Operand    │    │   (Registers)   │     │
+│   │  Counter)   │    │   Stack)    │    │                 │     │
+│   │             │    │             │    │  [0] Current    │     │
+│   │  Points to  │    │  RPN-style  │    │  [1] Result     │     │
+│   │  next       │    │  stack for  │    │  [2] locnum     │     │
+│   │  bytecode   │    │  operations │    │  [3] argnum     │     │
+│   │  instruction│    │             │    │  [4+] locals    │     │
+│   └─────────────┘    └─────────────┘    │  [n+] args      │     │
+│                                          └─────────────────┘     │
+│                                                                  │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │                    Dispatch Tables                       │   │
+│   │                                                          │   │
+│   │  egc_frozen[body_id] → C function pointer (frozen code)  │   │
+│   │  melt[body_id]       → bytecode address (melted code)    │   │
+│   │  pattern[pat_id]     → interpreter entry point           │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### 14.2 Key Source Files
+
+| File | Size | Purpose |
+|------|------|---------|
+| `Src/C/run-time/interp.c` | 229 KB | Main bytecode interpreter loop |
+| `Src/C/run-time/wbench.c` | 21 KB | Workbench mode dispatch |
+| `Src/C/run-time/include/rt_interp.h` | 12 KB | Opcode definitions (177 opcodes) |
+| `Src/C/run-time/eif_interp.h` | 3 KB | Public interpreter API |
+| `Src/C/run-time/eif_wbench.h` | 3 KB | Workbench API |
+| `Src/C/bench/meltdump.c` | 22 KB | Tool to dump .melted files |
+| `Src/C/bench/bytedump.c` | 34 KB | Bytecode disassembler |
+| `Src/Eiffel/eiffel/byte_code/*.e` | ~180 files | Bytecode node classes |
+| `Src/Eiffel/eiffel/generation/byte_array.e` | - | Bytecode emission |
+
+### 14.3 Core Data Structures
+
+#### Interpreter Counter (IC)
+```c
+rt_public unsigned char *IC = NULL;
+// The interpreter counter is the location in byte code of the next
+// instruction to be fetched. Its behaviour is similar to the one of
+// PC in a central processing unit.
+```
+
+#### Operand Stack (op_stack)
+```c
+rt_shared struct opstack op_stack = {
+    (struct stopchunk *) 0,  // st_hd - head
+    (struct stopchunk *) 0,  // st_tl - tail
+    (struct stopchunk *) 0   // st_cur - current
+};
+// This is the stack used by the virtual stack machine, in a reverse
+// polish notation manner (RPN). All operations take arguments from
+// the stack and push results back onto the stack.
+```
+
+#### Register Array (iregs)
+```c
+rt_private EIF_TYPED_VALUE **iregs = NULL;
+#define icurrent    (*iregs)           // Value of Current
+#define iresult     (*(iregs+1))       // Result of function
+#define ilocnum     (*(iregs+2))       // Number of locals
+#define iargnum     (*(iregs+3))       // Number of arguments
+#define loc(n)      (*(iregs+3+(n)))   // Locals from 1 to locnum
+#define arg(n)      (*(iregs+3+locnum+(n)))  // Arguments
+```
+
+### 14.4 Bytecode Opcodes (177 Total)
+
+#### Control Flow (0-30)
+| Code | Name | Description |
+|------|------|-------------|
+| 0 | `BC_START` | Routine entry |
+| 1 | `BC_PRECOND` | Start preconditions |
+| 2 | `BC_POSTCOND` | Start postconditions |
+| 3 | `BC_DEFERRED` | Deferred routine marker |
+| 17 | `BC_JMP_F` | Jump if false |
+| 18 | `BC_JMP` | Unconditional jump |
+| 19 | `BC_LOOP` | Loop marker |
+| 78 | `BC_JMP_T` | Jump if true |
+
+#### Assertions (5-16)
+| Code | Name | Description |
+|------|------|-------------|
+| 5 | `BC_CHECK` | Check instruction |
+| 6 | `BC_ASSERT` | Assertion |
+| 8 | `BC_PRE` | Precondition |
+| 9 | `BC_PST` | Postcondition |
+| 11 | `BC_LINV` | Loop invariant |
+| 13 | `BC_INV` | Class invariant |
+
+#### Assignment & Creation (23-35)
+| Code | Name | Description |
+|------|------|-------------|
+| 23 | `BC_RASSIGN` | Result assignment |
+| 24 | `BC_LASSIGN` | Local assignment |
+| 25 | `BC_ASSIGN` | General assignment |
+| 26 | `BC_CREATE` | Object creation |
+| 31 | `BC_CREATE_TYPE` | Typed creation |
+| 34 | `BC_LREVERSE` | Local reverse assignment |
+| 35 | `BC_RREVERSE` | Result reverse assignment |
+
+#### Feature Calls (36-44)
+| Code | Name | Description |
+|------|------|-------------|
+| 36 | `BC_FEATURE` | Feature call |
+| 40 | `BC_FEATURE_INV` | Feature call with invariant |
+| 41 | `BC_ATTRIBUTE` | Attribute access |
+| 42 | `BC_ATTRIBUTE_INV` | Attribute with invariant |
+| 43 | `BC_EXTERN` | External call |
+| 44 | `BC_EXTERN_INV` | External with invariant |
+
+#### Values & Registers (45-51)
+| Code | Name | Description |
+|------|------|-------------|
+| 45 | `BC_CHAR` | Character constant |
+| 46 | `BC_BOOL` | Boolean constant |
+| 47 | `BC_INT32` | 32-bit integer constant |
+| 48 | `BC_DOUBLE` | Double constant |
+| 49 | `BC_RESULT` | Push Result |
+| 50 | `BC_LOCAL` | Push local variable |
+| 51 | `BC_ARG` | Push argument |
+
+#### Operators (52-71)
+| Code | Name | Description |
+|------|------|-------------|
+| 52 | `BC_UPLUS` | Unary plus |
+| 53 | `BC_UMINUS` | Unary minus |
+| 54 | `BC_NOT` | Boolean not |
+| 55 | `BC_LT` | Less than |
+| 56 | `BC_GT` | Greater than |
+| 57 | `BC_MINUS` | Subtraction |
+| 60 | `BC_EQ` | Equality |
+| 61 | `BC_NE` | Not equal |
+| 62 | `BC_STAR` | Multiplication |
+| 68 | `BC_SLASH` | Division |
+| 70 | `BC_PLUS` | Addition |
+
+#### Exception Handling (80-82, 172-176)
+| Code | Name | Description |
+|------|------|-------------|
+| 80 | `BC_RESCUE` | Rescue clause start |
+| 81 | `BC_END_RESCUE` | Rescue clause end |
+| 82 | `BC_RETRY` | Retry instruction |
+| 172 | `BC_TRY` | Try block start |
+| 173 | `BC_TRY_END` | Try block end |
+| 175 | `BC_DO_RESCUE` | Do with rescue |
+
+#### SCOOP (27-28, 114, 166)
+| Code | Name | Description |
+|------|------|-------------|
+| 27 | `BC_START_SEPARATE` | Separate block start |
+| 28 | `BC_END_SEPARATE` | Separate block end |
+| 114 | `BC_SEPARATE` | Separate type marker |
+| 166 | `BC_WAIT_ARG` | Wait condition argument |
+
+### 14.5 Key Functions
+
+#### Main Interpreter Entry
+```c
+// Public entry point - sets IC and calls interpret()
+rt_public void xinterp(unsigned char *icval, rt_uint_ptr nb_pushed);
+
+// Initialize the interpreter
+rt_public void xinitint(void);
+
+// IMPORTANT: Can update bytecode for a feature at runtime!
+rt_public void eif_override_byte_code_of_body(
+    int body_id,
+    int pattern_id,
+    unsigned char *bc,
+    int count
+);
+```
+
+#### Workbench Dispatch
+```c
+// Get function pointer for feature call
+rt_public EIF_REFERENCE_FUNCTION wfeat(int routine_id, EIF_TYPE_INDEX dtype)
+{
+    BODY_INDEX body_id;
+    CBodyId(body_id, routine_id, dtype);  // Get body index
+
+    if (egc_frozen[body_id])
+        return (EIF_REFERENCE_FUNCTION) egc_frozen[body_id];  // Frozen
+    else {
+        IC = melt[body_id];  // Position interpreter to bytecode
+        return (EIF_REFERENCE_FUNCTION) pattern[MPatId(body_id)].toi;
+    }
+}
+```
+
+### 14.6 Melted File Format
+
+The `.melted` file (e.g., `project.melted` in `EIFGEN/W_CODE/`) contains:
+
+```
+┌────────────────────────────────────────┐
+│ Header                                  │
+│  - Has content flag (1 byte)            │
+│  - IEEE arithmetic flag (1 byte)        │
+│  - Class types count (4 bytes)          │
+│  - Class count (4 bytes)                │
+│  - Original routine bodies (4 bytes)    │
+│  - Profiling enabled (4 bytes)          │
+├────────────────────────────────────────┤
+│ Type Names Table                        │
+│  - Count of feature table updates       │
+│  - For each: dtype, name length, name   │
+├────────────────────────────────────────┤
+│ Bytecode Bodies                         │
+│  - Compressed with LZO                  │
+│  - Each body: pattern_id + bytecode     │
+├────────────────────────────────────────┤
+│ Metadata                                │
+│  - Class nodes                          │
+│  - Parent tables                        │
+│  - CECIL info                           │
+│  - Options                              │
+│  - Routine info                         │
+│  - Descriptors                          │
+│  - Root class info                      │
+└────────────────────────────────────────┘
+```
+
+### 14.7 Implications for EiffelNotebook
+
+#### Potential Integration Points
+
+1. **`eif_override_byte_code_of_body()`** - Could inject new bytecode at runtime!
+2. **`xinterp()`** - Direct interpreter invocation with bytecode address
+3. **`melt[]` array** - Register new melted features
+4. **`pattern[]` table** - Add dispatch entries
+
+#### Challenges
+
+1. **Tight Coupling** - Interpreter expects full EiffelStudio infrastructure
+2. **No Documentation** - Internal format undocumented
+3. **Version Dependency** - Bytecode format may change between versions
+4. **Initialization** - Requires full runtime initialization
+
+#### Realistic Approach
+
+Rather than trying to invoke the interpreter directly, the accumulated class pattern remains the most practical approach:
+
+1. Generate Eiffel class with notebook cells
+2. Use `ec -batch -melt` for fast compilation
+3. Let EiffelStudio handle bytecode generation
+4. Execute resulting system
+
+This leverages the Melting Ice VM indirectly while avoiding the complexity of direct bytecode manipulation.
+
+### 14.8 Tools Available
+
+The EiffelStudio source includes useful diagnostic tools:
+
+| Tool | Location | Purpose |
+|------|----------|---------|
+| `meltdump` | `Src/C/bench/meltdump.c` | Parse and dump .melted files |
+| `bytedump` | `Src/C/bench/bytedump.c` | Disassemble bytecode |
+
+These could be built and used to understand the bytecode format better.
+
+---
+
 *Document generated: December 2024*
+*Updated: December 2024 - Added bytecode internals from source analysis*
 *Status: Research Complete*
