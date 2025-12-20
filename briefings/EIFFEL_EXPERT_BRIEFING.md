@@ -1237,6 +1237,173 @@ These zones are "radioactive" because:
 
 ---
 
+## Part 10: DBC Logging Pattern
+
+For applications that need troubleshooting support, implement DBC-aware logging that traces the contract evaluation flow.
+
+### Purpose
+
+Logging isn't just about failures - it's about traceability. A DBC log shows:
+- What features were called (call stack)
+- What preconditions were evaluated
+- What postconditions were satisfied
+- What check assertions passed
+- Complete picture of execution flow
+
+This allows users to send logs with bug reports, showing exactly what happened even when nothing "failed".
+
+### Implementation Pattern
+
+```eiffel
+feature -- Execution with logging
+
+    execute_with_logging (a_input: STRING): STRING
+            -- Execute operation with full DBC trace
+        require
+            input_valid: log_precondition ("input_valid", not a_input.is_empty)
+        local
+            l_result: STRING
+        do
+            log_entry ("execute_with_logging", "input=" + truncate(a_input, 50))
+
+            -- Core logic
+            l_result := process (a_input)
+
+            check
+                intermediate_valid: log_check ("result_not_void", l_result /= Void)
+            end
+
+            Result := l_result
+            log_exit ("execute_with_logging", "success")
+        ensure
+            result_valid: log_postcondition ("result_valid", Result.count > 0)
+        end
+
+feature {NONE} -- Logging helpers
+
+    log_precondition (a_name: STRING; a_condition: BOOLEAN): BOOLEAN
+            -- Log precondition evaluation, return condition unchanged
+        do
+            log_event ("PRE", a_name + "=" + a_condition.out)
+            Result := a_condition
+        end
+
+    log_postcondition (a_name: STRING; a_condition: BOOLEAN): BOOLEAN
+            -- Log postcondition evaluation, return condition unchanged
+        do
+            log_event ("POST", a_name + "=" + a_condition.out)
+            Result := a_condition
+        end
+
+    log_check (a_name: STRING; a_condition: BOOLEAN): BOOLEAN
+            -- Log check assertion, return condition unchanged
+        do
+            log_event ("CHECK", a_name + "=" + a_condition.out)
+            Result := a_condition
+        end
+
+    log_entry (a_feature: STRING; a_details: STRING)
+            -- Log feature entry
+        do
+            log_event ("ENTER", a_feature + " | " + a_details)
+        end
+
+    log_exit (a_feature: STRING; a_status: STRING)
+            -- Log feature exit
+        do
+            log_event ("EXIT", a_feature + " | " + a_status)
+        end
+```
+
+### Log Output Example
+
+```
+[14:32:01] ENTER | execute_with_logging | input=print ("Hello World")
+[14:32:01] PRE | input_valid=True
+[14:32:02] CHECK | result_not_void=True
+[14:32:02] POST | result_valid=True
+[14:32:02] EXIT | execute_with_logging | success
+```
+
+### Benefits
+
+1. **Full traceability** - See exactly what happened in any session
+2. **DBC verification** - Confirm contracts were evaluated correctly
+3. **Bug reports** - Users can attach logs showing the problem
+4. **Performance profiling** - Timestamps show where time is spent
+5. **Regression detection** - Compare logs across versions
+
+### Key Principles
+
+- Logging wraps conditions, never changes them (pure functions)
+- Log at boundaries: feature entry/exit, contract evaluation
+- Include version in log header for issue tracking
+- Use rescue clauses to ensure logging never crashes the app
+- Truncate long strings to keep logs readable
+
+### Simplified Caller/Supplier Pattern (No Agents)
+
+For simpler cases where modifying contracts isn't practical, use explicit caller/supplier logging:
+
+```eiffel
+feature {NONE} -- DBC trace logging
+
+    log_dbc_call (a_caller, a_supplier, a_preconditions: STRING)
+            -- Log caller-side: about to call supplier with preconditions met
+        do
+            log_event ("→CALL", a_caller + " → " + a_supplier + " | pre: " + a_preconditions)
+        end
+
+    log_dbc_return (a_supplier, a_postconditions: STRING)
+            -- Log supplier-side: returning with postconditions met
+        do
+            log_event ("←RET", a_supplier + " | post: " + a_postconditions)
+        end
+
+    b (a_bool: BOOLEAN): STRING
+            -- Boolean to compact string: T or F
+        do
+            if a_bool then Result := "T" else Result := "F" end
+        end
+```
+
+Usage in caller:
+
+```eiffel
+execute_code (a_code: STRING)
+    local
+        l_cell_count_before: INTEGER
+    do
+        -- DBC trace: caller logs preconditions BEFORE call
+        l_cell_count_before := notebook.cell_count
+        log_dbc_call ("CLI.execute_code", "NOTEBOOK.run",
+            "code_not_empty=" + b(not a_code.is_empty) +
+            ", cell_count=" + l_cell_count_before.out)
+
+        l_result := notebook.run (a_code)
+
+        -- DBC trace: log postconditions AFTER return
+        log_dbc_return ("NOTEBOOK.run",
+            "result_attached=" + b(l_result /= Void) +
+            ", cell_added=" + b(notebook.cell_count > l_cell_count_before))
+    end
+```
+
+Log output:
+
+```
+[10:15:01] →CALL | CLI.execute_code → NOTEBOOK.run | pre: code_not_empty=T, cell_count=0
+[10:15:02] ←RET | NOTEBOOK.run | post: result_attached=T, cell_added=T
+```
+
+**When to use each pattern:**
+- **Agent-in-contract pattern**: When you want logging to be part of the contract definition itself
+- **Caller/supplier pattern**: When you want explicit tracing without modifying existing contracts
+
+**Future work**: Apply this pattern to all simple_* CLI apps and test harnesses for ecosystem-wide traceability.
+
+---
+
 ## Summary
 
 ### OOSC2 Principles
