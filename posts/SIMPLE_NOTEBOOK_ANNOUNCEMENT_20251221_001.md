@@ -76,6 +76,17 @@ Class CAR updated in cell 1.
 
 The notebook now starts in silent compile mode for a cleaner REPL experience. Use `-compile verbose` if you need to see compiler output.
 
+
+### Open in EiffelStudio
+
+After running cells, you can open the workspace directly in EiffelStudio:
+
+1. Navigate to `~/.eiffel_notebook/workspace/`
+2. Open the `.ecf` file in EiffelStudio
+3. Debug, browse, or modify with full IDE features
+
+Great for debugging complex code or exploring the generated class structure.
+
 ## Key Features
 
 - **Natural Eiffel syntax** - No special keywords, write standard Eiffel
