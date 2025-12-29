@@ -14,6 +14,12 @@
 2. **Modernizes** terminology from 1990s European/Academic to 2025 US/American GUI conventions
 3. **Provides** dual naming: classic EV2 names for veterans + modern names for new developers
 4. **Delivers** an `SV_QUICK` fluent API for rapid GUI construction
+5. **Extends** with a 3-tier rendering architecture:
+   - **Tier 1:** Pure EV2 widgets (native, cross-platform)
+   - **Tier 2:** C-enhanced graphics (Cairo gradients, shadows, blur)
+   - **Tier 3:** Web panels (webview + HTMX + Alpine.js for modern UI)
+
+See `SIMPLE_VISION_INNOVATIONS.md` for the complete innovation stack (13 innovations).
 
 ---
 
@@ -621,7 +627,9 @@ sv.window ("Settings")
 
 ## Part 5: Implementation Plan
 
-### Phase 1: Foundation (Week 1-2)
+**Note:** This plan follows our proven approach (5K+ LOC/day velocity). Each phase is achievable in 1-2 focused sessions.
+
+### Phase 1: Foundation (Tier 1 Core)
 - [ ] Create simple_vision library skeleton
 - [ ] Implement SV_ANY base class
 - [ ] Implement SV_QUICK factory (basic version)
@@ -630,7 +638,7 @@ sv.window ("Settings")
 - [ ] Implement SV_ROW/SV_COLUMN (SV_HBOX/SV_VBOX)
 - [ ] Basic demo: Hello World window
 
-### Phase 2: Core Widgets (Week 3-4)
+### Phase 2: Core Widgets (Tier 1)
 - [ ] SV_BUTTON with full builder
 - [ ] SV_TEXT/SV_LABEL
 - [ ] SV_TEXT_FIELD/SV_INPUT
@@ -640,7 +648,7 @@ sv.window ("Settings")
 - [ ] SV_DROPDOWN/SV_SELECT
 - [ ] Demo: Login form
 
-### Phase 3: Advanced Layouts (Week 5-6)
+### Phase 3: Advanced Layouts (Tier 1)
 - [ ] SV_GRID
 - [ ] SV_STACK
 - [ ] SV_CARD/SV_PANEL
@@ -651,16 +659,16 @@ sv.window ("Settings")
 - [ ] SV_SEPARATOR
 - [ ] Demo: Complex layout
 
-### Phase 4: Data Widgets (Week 7-8)
+### Phase 4: Data Widgets (Tier 1)
 - [ ] SV_LIST
 - [ ] SV_TREE
-- [ ] SV_DATA_GRID
+- [ ] SV_DATA_GRID (leveraging EV_GRID)
 - [ ] SV_PROGRESS
 - [ ] SV_SLIDER
 - [ ] SV_STEPPER
 - [ ] Demo: Data browser
 
-### Phase 5: Dialogs & Polish (Week 9-10)
+### Phase 5: Dialogs & Polish (Tier 1)
 - [ ] SV_DIALOG
 - [ ] SV_ALERT/SV_MESSAGE
 - [ ] SV_CONFIRM
@@ -670,14 +678,32 @@ sv.window ("Settings")
 - [ ] SV_IMAGE
 - [ ] Demo: Complete application
 
-### Phase 6: Styling & Theming (Week 11-12)
+### Phase 6: Styling & Theming (Tier 1)
 - [ ] SV_STYLE class
 - [ ] SV_THEME class
 - [ ] Light/Dark themes
 - [ ] Custom color schemes
 - [ ] Demo: Themed application
 
-### Phase 7: Documentation & Testing
+### Phase 7: C Library Integration (Tier 2)
+- [ ] Create simple_cairo library (Cairo wrapper)
+- [ ] Create simple_stb library (stb_image wrapper)
+- [ ] SV_CAIRO_CANVAS widget
+- [ ] Gradient support in SV_GRAPHICS
+- [ ] Shadow support in SV_GRAPHICS
+- [ ] Demo: Modern styled cards with gradients/shadows
+
+### Phase 8: Web Panel Integration (Tier 3)
+- [ ] Create simple_webview library (webview wrapper)
+- [ ] SV_WEB_VIEW widget with Eiffel ↔ JS bridge
+- [ ] Integration with simple_htmx for HTML generation
+- [ ] Integration with simple_alpine for reactive JS
+- [ ] SV_RICH_EDITOR (web-based)
+- [ ] SV_CHART (Chart.js via webview)
+- [ ] SV_CODE_EDITOR (Monaco via webview)
+- [ ] Demo: Hybrid native + web application
+
+### Phase 9: Documentation & Testing
 - [ ] Unit tests for all widgets
 - [ ] Integration tests
 - [ ] docs/index.html
@@ -703,7 +729,7 @@ simple_vision/
 │   │   ├── sv_any.e
 │   │   ├── sv_application.e
 │   │   └── sv_quick.e
-│   ├── widgets/
+│   ├── widgets/                    -- Tier 1: EV2-based widgets
 │   │   ├── sv_widget.e
 │   │   ├── sv_control.e
 │   │   ├── sv_button.e
@@ -746,9 +772,20 @@ simple_vision/
 │   │   ├── sv_row_builder.e
 │   │   ├── sv_column_builder.e
 │   │   └── ... (one per widget)
-│   └── styling/
-│       ├── sv_style.e
-│       └── sv_theme.e
+│   ├── styling/
+│   │   ├── sv_style.e
+│   │   └── sv_theme.e
+│   ├── graphics/                   -- Tier 2: C-enhanced graphics
+│   │   ├── sv_graphics.e           -- Unified API
+│   │   ├── sv_cairo_canvas.e       -- Cairo rendering widget
+│   │   ├── sv_gradient.e
+│   │   └── sv_shadow.e
+│   └── web/                        -- Tier 3: Web panel integration
+│       ├── sv_web_view.e           -- Webview widget
+│       ├── sv_web_bridge.e         -- Eiffel ↔ JS communication
+│       ├── sv_rich_editor.e        -- TinyMCE/Quill wrapper
+│       ├── sv_chart.e              -- Chart.js wrapper
+│       └── sv_code_editor.e        -- Monaco wrapper
 ├── testing/
 │   ├── lib_tests.e
 │   └── test_set_base.e
@@ -756,7 +793,21 @@ simple_vision/
     ├── hello_world/
     ├── login_form/
     ├── data_browser/
-    └── settings_panel/
+    ├── settings_panel/
+    ├── hybrid_dashboard/           -- Tier 1 + Tier 3 example
+    └── styled_cards/               -- Tier 2 Cairo example
+```
+
+### Related Libraries (Dependencies)
+
+```
+D:\prod\
+├── simple_vision/      -- Main library (this plan)
+├── simple_cairo/       -- Cairo wrapper (Tier 2) [TO BE CREATED]
+├── simple_stb/         -- stb_image wrapper (Tier 2) [TO BE CREATED]
+├── simple_webview/     -- webview wrapper (Tier 3) [TO BE CREATED]
+├── simple_htmx/        -- HTMX HTML generation [EXISTS]
+└── simple_alpine/      -- Alpine.js integration [EXISTS]
 ```
 
 ---

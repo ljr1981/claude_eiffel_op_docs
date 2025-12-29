@@ -1111,18 +1111,23 @@ SV_THEME.current.load_custom (my_brand)
 # INNOVATION 9: Graphics Enhancement Layer
 
 ## The Problem
-EV2's drawing is basic and dated. No gradients, shadows, blur, or modern effects.
+EV2's native drawing (EV_DRAWABLE) is basic — lines, rectangles, ellipses, text. No gradients, shadows, blur, or modern effects.
 
-## The Solution: SV_GRAPHICS
+## The Solution: SV_GRAPHICS (Multi-Tier)
+
+SV_GRAPHICS provides a unified API that uses the best available backend:
+- **Tier 1 (EV2 only):** Basic shapes, solid colors
+- **Tier 2 (Cairo available):** True gradients, shadows, blur, anti-aliased paths (see Innovation 12)
+- **Tier 3 (webview):** CSS-based effects in web panels (see Innovation 13)
 
 ```eiffel
 class SV_GRAPHICS
 
-feature -- Gradients
+feature -- Gradients (Cairo-backed when available)
     linear_gradient (a_start, a_end: SV_COLOR; a_angle: REAL): SV_GRADIENT
     radial_gradient (a_center, a_outer: SV_COLOR): SV_GRADIENT
 
-feature -- Shadows (Simulated)
+feature -- Shadows (Cairo-backed when available, else simulated)
     drop_shadow (a_offset_x, a_offset_y, a_blur: INTEGER; a_color: SV_COLOR): SV_SHADOW
     inner_shadow (a_offset_x, a_offset_y, a_blur: INTEGER; a_color: SV_COLOR): SV_SHADOW
 
@@ -1513,11 +1518,14 @@ sv.window ("Editor")
 | 6 | **Navigation** | Page routing | React Router, Vue Router |
 | 7 | **AI Builder** | Generate UI from prompts | Galileo AI, Vercel v0 |
 | 8 | **Design Tokens** | Semantic theming | Material Design 3 |
-| 9 | **Graphics** | Modern visual effects | CSS3, CoreGraphics |
+| 9 | **Graphics** | Modern visual effects (see Innovation 12) | CSS3, CoreGraphics |
 | 10 | **Extras** | a11y, i18n*, undo, drag-drop, etc. | WCAG, react-intl |
 | 11 | **EV_GRID Enhancement** | Data grids with lazy loading, virtual scrolling, 1M+ rows | AG Grid, TanStack Table |
+| 12 | **C Library Integration** | Cairo gradients/shadows, stb images, cross-platform | Cairo, stb, webview |
+| 13 | **Hybrid Native + Web UI** | Blend native EV2 with web panels (HTMX, Alpine.js) | Electron, Tauri |
 
 *i18n via existing simple_i18n library
+*Graphics enhanced by C libraries (Cairo, Blend2D) - see Innovation 12
 
 ---
 
@@ -2069,14 +2077,16 @@ end
 
 ## Recommended Implementation Order
 
-| Priority | Library | Effort | Value |
-|----------|---------|--------|-------|
-| 1 | stb_image/stb_image_write | 1 day | Image format support |
-| 2 | webview/webview | 2-3 days | Rich content, charts, markdown |
-| 3 | Cairo | 1 week | Gradients, shadows, PDF export |
-| 4 | stb_truetype | 2-3 days | Custom font rendering |
-| 5 | PLplot | 1 week | Native charts |
-| 6 | Blend2D | 1-2 weeks | High-performance graphics |
+| Priority | Library | Complexity | Value |
+|----------|---------|------------|-------|
+| 1 | stb_image/stb_image_write | Very Low (single-header) | Image format support |
+| 2 | webview/webview | Low (small C lib) | Rich content, charts, markdown |
+| 3 | Cairo | Medium (mature API) | Gradients, shadows, PDF export |
+| 4 | stb_truetype | Low (single-header) | Custom font rendering |
+| 5 | PLplot | Medium (scientific lib) | Native charts |
+| 6 | Blend2D | Medium-High (larger lib) | High-performance graphics |
+
+*At 5K LOC/day velocity, each library integration is achievable in 1-2 sessions.*
 
 ## What This Enables
 
@@ -2853,154 +2863,204 @@ SV_DATA_GRID wraps EV_GRID and uses:
 
 ---
 
-# CROSS-PLATFORM CONSTRAINTS: Reality Check
+# CROSS-PLATFORM CONSTRAINTS: Reality Check (Updated)
 
-## The EV2 Foundation
+## The Three-Tier Rendering Architecture
 
-simple_vision sits atop EiffelVision-2, which provides cross-platform support via the Bridge Pattern:
+simple_vision provides **three rendering strategies**, each with different capabilities and trade-offs:
 
-| Platform | Backend | Status |
-|----------|---------|--------|
-| Windows | Win32/GDI+ | Mature, Full Support |
-| Linux | GTK+ 3 | Mature, Full Support |
-| macOS | Cocoa | Supported |
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    THREE-TIER RENDERING                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  TIER 1: Pure EV2 Widgets                                          │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │ • Cross-platform native widgets (buttons, trees, grids)       │ │
+│  │ • System menus, toolbars, dialogs                             │ │
+│  │ • EV_DRAWABLE for basic drawing                               │ │
+│  │ • Mature, stable, lightweight                                 │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  TIER 2: C-Enhanced Rendering (Cairo, Blend2D, stb)               │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │ • Gradients (linear, radial) via Cairo                        │ │
+│  │ • Drop shadows, blur effects via Cairo                        │ │
+│  │ • Anti-aliased vector graphics                                │ │
+│  │ • PDF/SVG export                                              │ │
+│  │ • Additional image formats via stb                            │ │
+│  │ Cross-platform: Win/Linux/Mac via C libraries                 │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+│  TIER 3: Web Panels (webview + HTMX + Alpine.js)                  │
+│  ┌───────────────────────────────────────────────────────────────┐ │
+│  │ • Modern HTML/CSS/JS UI                                       │ │
+│  │ • Rich text editing, charts (Chart.js), code editors (Monaco) │ │
+│  │ • GPU-accelerated rendering                                   │ │
+│  │ • Responsive, animated, 2025-quality interfaces               │ │
+│  │ Cross-platform: Edge WebView2 (Win), WebKit (Linux/Mac)       │ │
+│  └───────────────────────────────────────────────────────────────┘ │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
-**We are constrained by what EV2 can do at the platform level.**
+## Platform Support by Tier
 
-## What We CAN Do (Within EV2 Constraints)
+| Platform | Tier 1 (EV2) | Tier 2 (Cairo/C) | Tier 3 (webview) |
+|----------|--------------|------------------|------------------|
+| Windows | Win32/GDI+ ✓ | Cairo (prebuilt) ✓ | Edge WebView2 ✓ |
+| Linux | GTK+ 3 ✓ | Cairo (native to GTK) ✓ | WebKit2 ✓ |
+| macOS | Cocoa ✓ | Cairo (Homebrew) ✓ | WKWebView ✓ |
 
-### 1. High-Level Abstractions (Safe)
-These innovations work entirely within EV2's widget model:
+**All three tiers are cross-platform.** Developers choose the tier based on needs.
 
-| Innovation | Cross-Platform | Notes |
-|------------|---------------|-------|
-| Reactive Binding | YES | Pure Eiffel logic, no platform code |
-| State Machine | YES | Pure Eiffel logic |
-| Component System | YES | Composes EV2 widgets |
-| Form System | YES | Validation is pure Eiffel |
-| Navigation | YES | Widget swapping is EV2-native |
-| AI Builder | YES | Generates EV2-compatible code |
-| Design Tokens | YES | Color/font values work everywhere |
+## What Each Tier Can Do
 
-### 2. Layout Constraints (Mostly Safe)
-The constraint system enhances EV2's existing layout:
+### Tier 1: Pure EV2 Widgets (Native, Lightweight)
 
-| Feature | Cross-Platform | Approach |
-|---------|---------------|----------|
-| Expand/Shrink | YES | Maps to EV_BOX.enable_item_expand |
-| Percentage sizing | YES | Calculated at layout time |
-| Min/Max sizes | PARTIAL | EV2 has min only; max via container |
-| Responsive breakpoints | YES | Window resize events + recalculation |
-| Flex ratios | YES | Custom container implementation |
-| Aspect ratio | YES | Calculated, not native |
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Buttons, labels, text fields | ✓ Full | Native widgets |
+| Trees, lists, grids | ✓ Full | EV_TREE, EV_LIST, EV_GRID |
+| Menus, toolbars, status bars | ✓ Full | Native chrome |
+| Dialogs (file, color, font) | ✓ Full | System dialogs |
+| Basic drawing | ✓ Full | EV_DRAWABLE |
+| Colors, fonts | ✓ Full | EV_COLOR, EV_FONT |
+| Gradients | ✗ None | Use Tier 2 |
+| Shadows | ✗ None | Use Tier 2 |
+| Blur/glass effects | ✗ None | Use Tier 2/3 |
 
-### 3. Graphics (Platform-Dependent)
+### Tier 2: C-Enhanced (Cairo, Blend2D, stb)
 
-| Feature | Cross-Platform | Notes |
-|---------|---------------|-------|
-| Basic drawing (lines, rects, ellipses) | YES | EV_DRAWABLE |
-| Filled shapes | YES | EV_DRAWABLE |
-| Text rendering | YES | EV_DRAWABLE.draw_text |
-| Colors | YES | EV_COLOR |
-| Fonts | MOSTLY | Font availability varies |
-| Images | YES | EV_PIXMAP, EV_PIXBUF |
-| **Gradients** | NO | Not in EV2; would need platform-specific |
-| **Drop shadows** | PARTIAL | Simulated with layered drawing |
-| **Blur effects** | NO | Not available |
-| **Rounded corners (native)** | NO | Simulated with clipping regions |
+| Feature | Status | Library |
+|---------|--------|---------|
+| Linear gradients | ✓ Full | Cairo |
+| Radial gradients | ✓ Full | Cairo |
+| Drop shadows | ✓ Full | Cairo |
+| Blur effects | ✓ Full | Cairo, Blend2D |
+| Anti-aliased paths | ✓ Full | Cairo, Blend2D |
+| PDF export | ✓ Full | Cairo |
+| SVG export | ✓ Full | Cairo |
+| PNG/JPG/BMP loading | ✓ Full | stb_image |
+| Image writing | ✓ Full | stb_image_write |
+| TrueType fonts | ✓ Full | stb_truetype |
+| Scientific charts | ✓ Full | PLplot |
 
-### 4. Accessibility
+### Tier 3: Web Panels (webview + HTMX + Alpine.js)
 
-| Feature | Cross-Platform | Notes |
-|---------|---------------|-------|
-| Keyboard focus | YES | EV2 native |
-| Tab navigation | YES | EV2 native |
-| Screen reader labels | PARTIAL | Platform AT-SPI (Linux), MSAA (Win) |
-| High contrast | YES | Via Design Tokens |
+| Feature | Status | Technology |
+|---------|--------|------------|
+| Rich text editing | ✓ Full | TinyMCE, Quill via webview |
+| Interactive charts | ✓ Full | Chart.js, D3.js via webview |
+| Code editors | ✓ Full | Monaco Editor via webview |
+| Complex forms | ✓ Full | HTMX + Alpine.js |
+| Dashboards | ✓ Full | HTMX + Alpine.js |
+| Markdown preview | ✓ Full | marked.js via webview |
+| Data tables | ✓ Full | AG-Grid via webview |
+| GPU acceleration | ✓ Full | Browser compositor |
+| Animations | ✓ Full | CSS transitions/animations |
 
-## What We CANNOT Do (Platform Limitations)
-
-1. **True native shadows** - EV2 has no shadow API
-2. **Blur/frosted glass** - Requires compositor access
-3. **Native rounded corners** - Must simulate with clipping
-4. **Animations > 30fps** - EV2 timer resolution limits
-5. **Custom window chrome** - Platform window manager controls this
-6. **Transparency/translucency** - Limited support in EV2
-7. **GPU acceleration** - EV2 uses CPU rendering
-
-## Innovation Compatibility Matrix
+## Innovation Compatibility Matrix (Updated)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    INNOVATION COMPATIBILITY                         │
 ├───────────────────────┬─────────────────────────────────────────────┤
-│ Innovation            │ Win │ Linux │ macOS │ Notes                 │
-├───────────────────────┼─────┼───────┼───────┼───────────────────────┤
-│ Reactive Binding      │  ✓  │   ✓   │   ✓   │ Pure Eiffel           │
-│ State Machine         │  ✓  │   ✓   │   ✓   │ Pure Eiffel           │
-│ Components            │  ✓  │   ✓   │   ✓   │ Composes EV2 widgets  │
-│ Constraints           │  ✓  │   ✓   │   ✓   │ Layout calculation    │
-│ Forms                 │  ✓  │   ✓   │   ✓   │ Pure Eiffel           │
-│ Navigation            │  ✓  │   ✓   │   ✓   │ Widget management     │
-│ AI Builder            │  ✓  │   ✓   │   ✓   │ Generates Eiffel code │
-│ Design Tokens         │  ✓  │   ✓   │   ✓   │ Color/spacing values  │
-│ Dark Mode             │  ✓  │   ✓   │   ✓   │ Swap token values     │
-│ Icons (vector-like)   │  ✓  │   ✓   │   ✓   │ Pre-rendered pixmaps  │
-│ Gradients             │  ~  │   ~   │   ~   │ Simulated line-by-line│
-│ Shadows               │  ~  │   ~   │   ~   │ Simulated overlay     │
-│ Animations            │  ~  │   ~   │   ~   │ Timer-based, limited  │
-│ Rounded Corners       │  ~  │   ~   │   ~   │ Clipping regions      │
-│ Blur/Glass            │  ✗  │   ✗   │   ✗   │ Not possible          │
-├───────────────────────┴─────┴───────┴───────┴───────────────────────┤
-│ ✓ = Full Support   ~ = Simulated/Limited   ✗ = Not Possible        │
+│ Innovation            │ Win │ Linux │ macOS │ Tier  │ Notes         │
+├───────────────────────┼─────┼───────┼───────┼───────┼───────────────┤
+│ 1. Reactive Binding   │  ✓  │   ✓   │   ✓   │  All  │ Pure Eiffel   │
+│ 2. State Machine      │  ✓  │   ✓   │   ✓   │  All  │ Pure Eiffel   │
+│ 3. Components         │  ✓  │   ✓   │   ✓   │  All  │ Composes any  │
+│ 4. Constraints        │  ✓  │   ✓   │   ✓   │ 1,2   │ Layout calc   │
+│ 5. Forms              │  ✓  │   ✓   │   ✓   │  All  │ Pure Eiffel   │
+│ 6. Navigation         │  ✓  │   ✓   │   ✓   │  All  │ Widget mgmt   │
+│ 7. AI Builder         │  ✓  │   ✓   │   ✓   │  All  │ Code gen      │
+│ 8. Design Tokens      │  ✓  │   ✓   │   ✓   │  All  │ Color/spacing │
+│ 9. Graphics Base      │  ✓  │   ✓   │   ✓   │  1    │ EV_DRAWABLE   │
+│ 10. Extras (a11y...)  │  ✓  │   ✓   │   ✓   │  All  │ Various       │
+│ 11. EV_GRID Enhanced  │  ✓  │   ✓   │   ✓   │  1    │ Native grid   │
+│ 12. C Library (Cairo) │  ✓  │   ✓   │   ✓   │  2    │ Grad/shadow   │
+│ 13. Hybrid Web UI     │  ✓  │   ✓   │   ✓   │  3    │ HTMX/Alpine   │
+├───────────────────────┼─────┼───────┼───────┼───────┼───────────────┤
+│ Gradients             │  ✓  │   ✓   │   ✓   │  2,3  │ Cairo/CSS     │
+│ Drop Shadows          │  ✓  │   ✓   │   ✓   │  2,3  │ Cairo/CSS     │
+│ Blur/Glass            │  ✓  │   ✓   │   ✓   │  2,3  │ Cairo/CSS     │
+│ Rich Text Editing     │  ✓  │   ✓   │   ✓   │  3    │ TinyMCE       │
+│ Charts                │  ✓  │   ✓   │   ✓   │  2,3  │ PLplot/Chart.js│
+│ Code Editor           │  ✓  │   ✓   │   ✓   │  3    │ Monaco        │
+│ GPU Acceleration      │  ✓  │   ✓   │   ✓   │  3    │ WebView       │
+├───────────────────────┴─────┴───────┴───────┴───────┴───────────────┤
+│ ✓ = Full Cross-Platform Support                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-## Design Decisions for Cross-Platform
+## Choosing the Right Tier
 
-### 1. Graceful Degradation
-When a feature isn't fully supported, degrade gracefully:
+| Use Case | Recommended Tier | Why |
+|----------|------------------|-----|
+| System menus, toolbars | Tier 1 (EV2) | Native look & feel |
+| Tree navigation | Tier 1 (EV2) | Native performance |
+| Data grids (1M+ rows) | Tier 1 (EV2) | Virtual scrolling |
+| File/color/font dialogs | Tier 1 (EV2) | System integration |
+| Buttons with gradients | Tier 2 (Cairo) | Visual polish |
+| Cards with shadows | Tier 2 (Cairo) | Modern appearance |
+| Custom charts | Tier 2 (PLplot) | Scientific plotting |
+| Rich text editing | Tier 3 (webview) | Full WYSIWYG |
+| Interactive dashboards | Tier 3 (webview) | Modern web stack |
+| Code editing | Tier 3 (Monaco) | Syntax highlighting |
+| Complex animated forms | Tier 3 (webview) | CSS animations |
+
+## Design Decisions
+
+### 1. Three Tiers Coexist
+An application can mix all three tiers:
 
 ```eiffel
--- Shadow: use simulated on all platforms
+sv.window ("My App")
+    .content (
+        sv.split
+            .left (sv.tree)                    -- Tier 1: Native tree
+            .right (
+                sv.column.children (<<
+                    sv.cairo_panel.gradient (...),  -- Tier 2: Cairo
+                    sv.web_view.load_htmx (...)     -- Tier 3: Web
+                >>)
+            )
+    )
+```
+
+### 2. Graceful Degradation
+If a C library isn't available, fall back to Tier 1:
+
+```eiffel
 sv.card
-    .shadow (sv.tokens.shadow_md)  -- Will use overlay simulation
+    .shadow (sv.shadows.md)  -- Uses Cairo if available, else skip
 ```
 
-### 2. Prefer Pure Eiffel
-Keep as much logic as possible in pure Eiffel (not platform-dependent):
-- All data binding logic
-- All state machine logic
-- All validation logic
-- All layout calculations
+### 3. Pure Eiffel Logic Everywhere
+All business logic stays in Eiffel regardless of rendering tier:
+- Data binding logic (pure Eiffel)
+- State machine logic (pure Eiffel)
+- Validation logic (pure Eiffel)
+- Web panel communication (Eiffel ↔ JS bridge)
 
-### 3. Abstraction Over Platform Code
-If platform-specific features are ever needed, use the EV2 bridge pattern:
+### 4. Dependency Management
+Each tier has optional dependencies:
 
-```eiffel
-class SV_NATIVE_FEATURE
-    -- Abstract interface
-feature
-    do_platform_thing
-        do
-            implementation.do_platform_thing
-        end
+| Tier | Required | Optional |
+|------|----------|----------|
+| 1 | EiffelVision-2 | (none) |
+| 2 | simple_cairo | simple_blend2d, simple_stb |
+| 3 | simple_webview | simple_htmx, simple_alpine |
 
-feature {NONE}
-    implementation: SV_NATIVE_FEATURE_I
-        -- Created based on platform at runtime
-end
-```
-
-### 4. Document Platform Differences
-All SV_* classes document platform behavior:
+### 5. Documentation Notes
 
 ```eiffel
-feature -- Shadows
+feature -- Shadows (Tier 2 Enhanced)
     shadow (a_shadow: SV_SHADOW): like Current
             -- Apply drop shadow effect.
-            -- Note: Simulated on all platforms using overlay technique.
-            -- May have performance impact on complex UIs.
+            -- Uses Cairo if available (true drop shadow).
+            -- Falls back to overlay simulation if Cairo unavailable.
 ```
 
 ---
