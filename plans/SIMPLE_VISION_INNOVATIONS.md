@@ -1627,11 +1627,163 @@ feature -- UI
 end
 ```
 
+## SV_* Wrapper Classes for Ecosystem Integration
+
+Each simple_* library gets an SV_* wrapper that provides GUI-friendly integration:
+
+### Data Source Wrappers
+
+| simple_* Library | SV_* Class | Purpose |
+|------------------|------------|---------|
+| simple_sql | `SV_SQL_DATA_SOURCE [G]` | Reactive SQL queries, auto-refresh on change |
+| simple_http | `SV_REST_DATA_SOURCE [G]` | REST API binding with pagination, caching |
+| simple_websocket | `SV_REALTIME_DATA_SOURCE [G]` | Live data streaming to grids/lists |
+| simple_json | `SV_JSON_DATA_SOURCE [G]` | JSON file as reactive data store |
+| simple_xml | `SV_XML_DATA_SOURCE [G]` | XML file binding |
+| simple_yaml | `SV_YAML_DATA_SOURCE [G]` | YAML config as data source |
+| simple_csv | `SV_CSV_DATA_SOURCE [G]` | CSV import/export with grid binding |
+
+### UI Utility Wrappers
+
+| simple_* Library | SV_* Class | Purpose |
+|------------------|------------|---------|
+| simple_i18n | `SV_I18N_BRIDGE` | Locale change events, widget refresh |
+| simple_clipboard | `SV_CLIPBOARD` | Widget-aware cut/copy/paste actions |
+| simple_pdf | `SV_PDF_EXPORTER` | Export widgets, grids, forms to PDF |
+| simple_validation | `SV_VALIDATOR` | Rule-based field validation with UI feedback |
+| simple_config | `SV_SETTINGS` | Persistent app settings with change notification |
+| simple_logger | `SV_DEBUG_CONSOLE` | Visual log viewer widget |
+| simple_uuid | `SV_ID_GENERATOR` | Unique IDs for widget tracking |
+| simple_datetime | `SV_DATE_PICKER`, `SV_TIME_PICKER`, `SV_CALENDAR` | Date/time input widgets |
+| simple_regex | `SV_PATTERN_VALIDATOR` | Regex-based input validation |
+| simple_template | `SV_TEMPLATE_TEXT` | Dynamic text labels with variable substitution |
+| simple_markdown | `SV_MARKDOWN_VIEW` | Rendered markdown display widget |
+| simple_watcher | `SV_FILE_WATCHER` | Auto-reload UI when files change |
+| simple_encryption | `SV_SECURE_FIELD` | Encrypted credential storage |
+| simple_cache | `SV_CACHED_DATA_SOURCE [G]` | Caching layer for any data source |
+
+### AI/Media Wrappers
+
+| simple_* Library | SV_* Class | Purpose |
+|------------------|------------|---------|
+| simple_ai_client | `SV_AI_BUILDER`, `SV_CLAUDE_PROVIDER`, `SV_GPT_PROVIDER`, `SV_OLLAMA_PROVIDER` | AI-powered UI generation |
+| simple_ffmpeg | `SV_VIDEO_PLAYER`, `SV_VIDEO_THUMBNAIL` | Video playback widget, thumbnails |
+| simple_audio | `SV_AUDIO_PLAYER`, `SV_SOUND_EFFECT` | Audio playback, notification sounds |
+
+### Example: SV_DATE_PICKER using simple_datetime
+
+```eiffel
+class SV_DATE_PICKER
+    -- Wraps simple_datetime for visual date selection
+
+inherit
+    SV_WIDGET
+
+feature -- Access
+    value: SV_OBSERVABLE [DATE]
+        -- Selected date (reactive)
+
+    simple_date: SIMPLE_DATE
+        -- Underlying simple_datetime object
+
+feature -- Configuration
+    min_date (a_date: DATE): like Current
+    max_date (a_date: DATE): like Current
+    format (a_format: STRING): like Current  -- e.g., "MM/DD/YYYY"
+    locale (a_locale: STRING): like Current  -- Uses simple_i18n
+
+feature -- Events
+    on_change: SV_ACTION_SEQUENCE [TUPLE [old_date, new_date: DATE]]
+end
+
+-- Usage
+sv.date_picker
+    .format ("YYYY-MM-DD")
+    .min_date (today)
+    .bind (due_date_observable)
+```
+
+### Example: SV_MARKDOWN_VIEW using simple_markdown
+
+```eiffel
+class SV_MARKDOWN_VIEW
+    -- Renders markdown content using simple_markdown
+
+inherit
+    SV_WIDGET
+
+feature -- Content
+    set_markdown (a_md: STRING)
+        -- Parse and render markdown
+
+    set_markdown_file (a_path: STRING)
+        -- Load and render from file
+
+feature -- Configuration
+    enable_syntax_highlighting
+    disable_syntax_highlighting
+    set_code_theme (a_theme: STRING)  -- "dark", "light", "github"
+    enable_link_clicking
+    on_link_click: SV_ACTION_SEQUENCE [TUPLE [url: STRING]]
+end
+
+-- Usage
+sv.markdown_view
+    .set_markdown ("# Hello World%NThis is **bold** text.")
+    .enable_syntax_highlighting
+    .on_link_click (agent open_url)
+```
+
+### Example: SV_VIDEO_PLAYER using simple_ffmpeg
+
+```eiffel
+class SV_VIDEO_PLAYER
+    -- Video playback widget using simple_ffmpeg
+
+inherit
+    SV_WIDGET
+
+feature -- Playback
+    load (a_path: STRING)
+    play
+    pause
+    stop
+    seek (a_seconds: REAL_64)
+
+feature -- Status
+    is_playing: BOOLEAN
+    duration: REAL_64
+    current_position: REAL_64
+
+feature -- Configuration
+    show_controls: like Current
+    hide_controls: like Current
+    autoplay: like Current
+    loop: like Current
+    muted: like Current
+    volume (a_percent: REAL): like Current  -- 0.0 to 1.0
+
+feature -- Events
+    on_play: SV_ACTION_SEQUENCE [TUPLE]
+    on_pause: SV_ACTION_SEQUENCE [TUPLE]
+    on_end: SV_ACTION_SEQUENCE [TUPLE]
+    on_progress: SV_ACTION_SEQUENCE [TUPLE [position: REAL_64]]
+end
+
+-- Usage
+sv.video_player
+    .load ("intro.mp4")
+    .show_controls
+    .volume (0.8)
+    .on_end (agent play_next_video)
+```
+
 ## Dependency Graph
 
 ```
                     ┌─────────────────┐
                     │  simple_vision  │
+                    │    (SV_*)       │
                     └────────┬────────┘
                              │
         ┌────────────────────┼────────────────────┐
@@ -1639,6 +1791,7 @@ end
         ▼                    ▼                    ▼
 ┌───────────────┐    ┌───────────────┐    ┌───────────────┐
 │ Data Sources  │    │   UI Utils    │    │   AI/Media    │
+│  SV_*_SOURCE  │    │    SV_*       │    │    SV_*       │
 ├───────────────┤    ├───────────────┤    ├───────────────┤
 │ simple_sql    │    │ simple_i18n   │    │ simple_ai     │
 │ simple_http   │    │ simple_clip   │    │ simple_ffmpeg │
