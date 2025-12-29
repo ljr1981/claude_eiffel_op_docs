@@ -1279,41 +1279,168 @@ feature
 end
 ```
 
-## 10.4 Drag and Drop
+## 10.4 Pick-and-Drop / Drag-and-Drop — Leverages EV2 Native
+
+**EV2 has a sophisticated "Pick-and-Drop" system** via `EV_PICK_AND_DROPABLE`:
+
+### EV2 Native Features (Often Unknown)
+
+| Feature | Description |
+|---------|-------------|
+| `set_pebble` | Set the data object to transport |
+| `pebble_function` | Dynamic pebble generation |
+| `drop_actions` | Agents called when drop received |
+| `accept_cursor` / `deny_cursor` | Visual feedback |
+| **Three Modes** | Pick-and-drop, Drag-and-drop, Target menu |
+
+### Three Transport Modes
+
+```eiffel
+-- 1. Pick and Drop (default): Right-click pick, right-click drop
+widget.set_pick_and_drop_mode
+
+-- 2. Drag and Drop: Left-click hold, release to drop
+widget.set_drag_and_drop_mode
+
+-- 3. Target Menu: Right-click shows menu of all valid targets
+widget.set_target_menu_mode
+```
+
+### Type-Safe Transport
+EV2 uses Eiffel's type system — drop only succeeds if target's agent accepts pebble type:
+
+```eiffel
+-- Source: any STRING can be picked
+button1.set_pebble ("my data")
+
+-- Target: only accepts STRING pebbles
+button2.drop_actions.extend (agent handle_string_drop)
+
+handle_string_drop (a_data: STRING)
+    do
+        print ("Received: " + a_data)
+    end
+```
+
+### simple_vision Enhancement (SV_DRAG_DROP)
 
 ```eiffel
 class SV_DRAG_DROP
-feature
-    make_draggable (a_widget: SV_WIDGET; a_data: ANY)
-    make_drop_target (a_widget: SV_WIDGET; a_handler: PROCEDURE [ANY])
+    -- Simplified wrapper over EV_PICK_AND_DROPABLE
 
-    on_drag_start: SV_ACTION_SEQUENCE [TUPLE [widget: SV_WIDGET; data: ANY]]
+feature -- Setup (Fluent)
+    draggable (a_data: ANY): like Current
+        -- Make widget a drag source with this data
+
+    drop_target (a_handler: PROCEDURE [ANY]): like Current
+        -- Make widget accept drops
+
+    mode (a_mode: INTEGER): like Current
+        -- sv.drag.pick_and_drop, sv.drag.drag_and_drop, sv.drag.target_menu
+
+feature -- Cursors
+    accept_cursor (a_pixmap: EV_PIXMAP): like Current
+    deny_cursor (a_pixmap: EV_PIXMAP): like Current
+
+feature -- Events
+    on_drag_start: SV_ACTION_SEQUENCE [TUPLE [data: ANY]]
     on_drag_over: SV_ACTION_SEQUENCE [TUPLE [target: SV_WIDGET; data: ANY]]
     on_drop: SV_ACTION_SEQUENCE [TUPLE [target: SV_WIDGET; data: ANY]]
+    on_drag_cancel: SV_ACTION_SEQUENCE [TUPLE]
 end
+
+-- Usage
+sv.button ("Drag Me")
+    .draggable (my_object)
+    .mode (sv.drag.drag_and_drop)
+
+sv.panel
+    .drop_target (agent handle_drop)
+    .accept_cursor (sv.cursors.bullseye)
 ```
 
-## 10.5 Clipboard Helpers
+## 10.5 Clipboard — Uses simple_clipboard
+
+**Note:** simple_vision uses the existing **simple_clipboard** library (D:\prod\simple_clipboard).
 
 ```eiffel
-class SV_CLIPBOARD_HELPER
+-- simple_clipboard already provides:
+class SIMPLE_CLIPBOARD
 feature
-    copy_text (a_text: STRING)
-    paste_text: STRING
-    copy_widget_as_image (a_widget: SV_WIDGET)
-    has_text: BOOLEAN
-    has_image: BOOLEAN
+    -- Reading
+    text: detachable STRING_32       -- Get text from clipboard
+    has_text: BOOLEAN                -- Check if text available
+    is_empty: BOOLEAN                -- Check if clipboard empty
+    format_count: INTEGER            -- Number of formats available
+
+    -- Writing
+    set_text (a_text: STRING)        -- Put text on clipboard
+    copy_text (a_text: STRING)       -- Alias for set_text
+    clear                            -- Clear clipboard
+
+    -- Aliases
+    paste: detachable STRING_32      -- Alias for text
 end
+
+-- Integration with simple_vision widgets:
+sv.text_field
+    .context_menu (<<
+        sv.menu_item ("Cut").hotkey ("Ctrl+X").on_click (agent do
+            clipboard.set_text (text_field.selected_text)
+            text_field.delete_selection
+        end),
+        sv.menu_item ("Copy").hotkey ("Ctrl+C").on_click (agent do
+            clipboard.set_text (text_field.selected_text)
+        end),
+        sv.menu_item ("Paste").hotkey ("Ctrl+V").on_click (agent do
+            if attached clipboard.text as t then
+                text_field.insert_text (t)
+            end
+        end)
+    >>)
 ```
 
-## 10.6 Print/PDF Export
+## 10.6 Print/PDF Export — Uses simple_pdf
+
+**Note:** simple_vision uses the existing **simple_pdf** library (D:\prod\simple_pdf).
 
 ```eiffel
+-- simple_pdf provides comprehensive PDF generation:
+class SIMPLE_PDF
+feature
+    -- Document creation
+    create_document (a_path: STRING)
+    add_page
+    save
+
+    -- Text
+    set_font (a_name: STRING; a_size: REAL)
+    draw_text (a_text: STRING; a_x, a_y: REAL)
+    draw_text_wrapped (a_text: STRING; a_x, a_y, a_width: REAL)
+
+    -- Graphics
+    draw_line (x1, y1, x2, y2: REAL)
+    draw_rectangle (x, y, w, h: REAL)
+    draw_image (a_path: STRING; x, y, w, h: REAL)
+
+    -- Tables
+    draw_table (a_data: ARRAY2 [STRING]; x, y: REAL)
+end
+
+-- Integration with simple_vision:
 class SV_PRINT
 feature
-    print_widget (a_widget: SV_WIDGET)
-    export_to_pdf (a_widget: SV_WIDGET; a_path: STRING)
+    export_widget_to_pdf (a_widget: SV_WIDGET; a_path: STRING)
+        -- Render widget tree to PDF
+
+    export_data_grid_to_pdf (a_grid: SV_DATA_GRID; a_path: STRING)
+        -- Export grid data to formatted PDF table
+
     print_preview (a_widget: SV_WIDGET): SV_DIALOG
+        -- Show print preview dialog
+
+    print_widget (a_widget: SV_WIDGET)
+        -- Send to system printer
 end
 ```
 
@@ -1394,8 +1521,148 @@ sv.window ("Editor")
 
 ---
 
+# ECOSYSTEM INTEGRATION: Leveraging simple_* Libraries
+
+simple_vision doesn't reinvent the wheel — it integrates with the existing simple_* ecosystem.
+
+## Direct Dependencies
+
+| Library | Purpose in simple_vision |
+|---------|-------------------------|
+| **simple_clipboard** | Cut/copy/paste operations in text widgets |
+| **simple_i18n** | Internationalization, locale-aware formatting |
+| **simple_pdf** | PDF export of widgets and data grids |
+| **simple_validation** | Form field validation rules |
+| **simple_json** | Theme loading, state serialization |
+| **simple_config** | Application settings persistence |
+| **simple_logger** | Debug logging, error tracking |
+
+## Data Source Backends (SV_DATA_SOURCE implementations)
+
+| Library | Data Source Class |
+|---------|------------------|
+| **simple_sql** | `SV_SQL_DATA_SOURCE` — SQLite/database backend |
+| **simple_http** | `SV_REST_DATA_SOURCE` — REST API backend |
+| **simple_websocket** | `SV_REALTIME_DATA_SOURCE` — Live updates |
+| **simple_json** | `SV_JSON_FILE_DATA_SOURCE` — JSON file storage |
+| **simple_xml** | `SV_XML_DATA_SOURCE` — XML file storage |
+| **simple_yaml** | `SV_YAML_DATA_SOURCE` — YAML config files |
+| **simple_csv** | `SV_CSV_DATA_SOURCE` — CSV import/export |
+
+## AI Integration (SV_AI_BUILDER providers)
+
+| Library | Provider Class |
+|---------|---------------|
+| **simple_ai_client** | `SV_CLAUDE_PROVIDER`, `SV_GPT_PROVIDER`, `SV_OLLAMA_PROVIDER` |
+
+## Utility Libraries
+
+| Library | Usage |
+|---------|-------|
+| **simple_uuid** | Unique IDs for components, widgets |
+| **simple_datetime** | Date pickers, time formatting |
+| **simple_regex** | Input validation patterns |
+| **simple_template** | Dynamic text generation |
+| **simple_markdown** | Markdown rendering in rich text |
+| **simple_watcher** | File change notifications |
+| **simple_encryption** | Secure credential storage |
+| **simple_cache** | Response caching for data sources |
+
+## Media Libraries
+
+| Library | Usage |
+|---------|-------|
+| **simple_ffmpeg** | Video/audio widget support |
+| **simple_audio** | Sound playback, notifications |
+
+## Example: Full Stack Integration
+
+```eiffel
+class MY_APP
+
+feature -- Dependencies (all from simple_* ecosystem)
+    db: SIMPLE_SQL              -- Database access
+    http: SIMPLE_HTTP           -- REST API client
+    config: SIMPLE_CONFIG       -- App settings
+    logger: SIMPLE_LOGGER       -- Logging
+    i18n: SIMPLE_I18N           -- Translations
+    clipboard: SIMPLE_CLIPBOARD -- Clipboard ops
+    pdf: SIMPLE_PDF             -- PDF export
+    validator: SIMPLE_VALIDATION -- Form validation
+    ai: SIMPLE_AI_CLIENT        -- AI features
+
+feature -- Data Sources
+    users_source: SV_SQL_DATA_SOURCE [USER]
+        do
+            create Result.make (db, "SELECT * FROM users")
+        end
+
+    api_source: SV_REST_DATA_SOURCE [PRODUCT]
+        do
+            create Result.make (http, "https://api.example.com/products")
+        end
+
+feature -- UI
+    main_window: SV_WINDOW
+        do
+            Result := sv.window (i18n.translate ("app_title"))
+                .content (
+                    sv.data_grid [USER]
+                        .bind (users_source)  -- Reactive binding to SQL
+                        .columns (user_columns)
+                        .toolbar (<<
+                            sv.button (i18n.translate ("export_pdf"))
+                                .on_click (agent export_to_pdf),
+                            sv.button (i18n.translate ("add_user"))
+                                .on_click (agent add_user)
+                        >>)
+                )
+                .build
+        end
+
+    export_to_pdf
+        do
+            pdf.export_data_grid (main_grid, "users.pdf")
+        end
+end
+```
+
+## Dependency Graph
+
+```
+                    ┌─────────────────┐
+                    │  simple_vision  │
+                    └────────┬────────┘
+                             │
+        ┌────────────────────┼────────────────────┐
+        │                    │                    │
+        ▼                    ▼                    ▼
+┌───────────────┐    ┌───────────────┐    ┌───────────────┐
+│ Data Sources  │    │   UI Utils    │    │   AI/Media    │
+├───────────────┤    ├───────────────┤    ├───────────────┤
+│ simple_sql    │    │ simple_i18n   │    │ simple_ai     │
+│ simple_http   │    │ simple_clip   │    │ simple_ffmpeg │
+│ simple_ws     │    │ simple_pdf    │    │ simple_audio  │
+│ simple_json   │    │ simple_valid  │    └───────────────┘
+│ simple_xml    │    │ simple_config │
+│ simple_yaml   │    │ simple_logger │
+│ simple_csv    │    │ simple_uuid   │
+└───────────────┘    │ simple_regex  │
+                     │ simple_datetime│
+                     │ simple_template│
+                     │ simple_markdown│
+                     │ simple_watcher │
+                     │ simple_encrypt │
+                     │ simple_cache   │
+                     └───────────────┘
+```
+
+---
+
 ## Research Sources
 
+- [EiffelVision Pick and Drop](https://www.eiffel.org/doc/solutions/EiffelVision_Pick_and_Drop) — Pebbles and holes metaphor
+- [EV_GRID Flat contracts](https://www.eiffel.org/files/doc/static/17.05/libraries/vision2/ev_grid_flatshort.html) — Complete EV_GRID API
 - [Stack Overflow 2024 Survey - Developer Pain Points](https://stackoverflow.blog/2024/08/06/2024-developer-survey/)
 - [Hacker News - Cross-platform GUI 2024](https://news.ycombinator.com/item?id=38817920)
 - [Material Design 3 Tokens](https://m3.material.io/foundations/design-tokens)
