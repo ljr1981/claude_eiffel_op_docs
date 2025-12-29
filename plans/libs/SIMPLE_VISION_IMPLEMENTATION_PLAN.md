@@ -19,7 +19,7 @@
    - **Tier 2:** C-enhanced graphics (Cairo gradients, shadows, blur)
    - **Tier 3:** Web panels (webview + HTMX + Alpine.js for modern UI)
 
-See `SIMPLE_VISION_INNOVATIONS.md` for the complete innovation stack (13 innovations).
+See `SIMPLE_VISION_INNOVATIONS.md` for the complete innovation stack (14 innovations).
 
 ---
 
@@ -51,7 +51,8 @@ Based on proven 5K LOC/day velocity:
 | Form System (SV_FORM, SV_FIELD, validation) | ~3,000 | 1 |
 | Navigation (SV_NAVIGATOR) | ~2,000 | ½ |
 | Constraint System (SV_CONSTRAINTS) | ~2,000 | ½ |
-| **Subtotal (Innovations)** | **~10,500** | **3** |
+| GUI Testing Harness (SV_TEST_HARNESS) | ~3,000 | 1 |
+| **Subtotal (Innovations)** | **~13,500** | **4** |
 
 ### Summary
 
@@ -62,7 +63,7 @@ Based on proven 5K LOC/day velocity:
 | **Complete (all 3 tiers)** | 12 |
 | **With buffer for integration/debugging** | 15 |
 
-**Conservative estimate: 12-15 sessions** for the complete vision with all 13 innovations, 3 tiers, and polished documentation.
+**Conservative estimate: 13-16 sessions** for the complete vision with all 14 innovations, 3 tiers, and polished documentation.
 
 That's roughly 40,000-45,000 LOC — a substantial library, but achievable given our velocity.
 
@@ -674,61 +675,137 @@ sv.window ("Settings")
 
 **Note:** This plan follows our proven approach (5K+ LOC/day velocity). Each phase is achievable in 1-2 focused sessions.
 
-### Phase 1: Foundation (Tier 1 Core)
-- [ ] Create simple_vision library skeleton
-- [ ] Implement SV_ANY base class
-- [ ] Implement SV_QUICK factory (basic version)
-- [ ] Implement SV_APPLICATION wrapper
-- [ ] Implement SV_WINDOW and SV_WINDOW_BUILDER
-- [ ] Implement SV_ROW/SV_COLUMN (SV_HBOX/SV_VBOX)
-- [ ] Basic demo: Hello World window
+### Phase 1: Foundation (Tier 1 Core) ✅ COMPLETE
+- ✅ Create simple_vision library skeleton
+- ✅ Implement SV_ANY base class
+- ✅ Implement SV_QUICK factory (basic version)
+- ✅ Implement SV_APPLICATION wrapper
+- ✅ Implement SV_WINDOW and SV_WINDOW_BUILDER
+- ✅ Implement SV_ROW/SV_COLUMN (SV_HBOX/SV_VBOX)
+- ✅ Basic demo: Hello World window
 
-### Phase 2: Core Widgets (Tier 1)
-- [ ] SV_BUTTON with full builder
-- [ ] SV_TEXT/SV_LABEL
-- [ ] SV_TEXT_FIELD/SV_INPUT
-- [ ] SV_PASSWORD_FIELD
-- [ ] SV_CHECKBOX
-- [ ] SV_RADIO/SV_RADIO_GROUP
-- [ ] SV_DROPDOWN/SV_SELECT
-- [ ] Demo: Login form
+### Phase 2: Core Widgets (Tier 1) ✅ COMPLETE
+- ✅ SV_BUTTON with full builder
+- ✅ SV_TEXT/SV_LABEL
+- ✅ SV_TEXT_FIELD/SV_INPUT
+- ✅ SV_PASSWORD_FIELD
+- ✅ SV_CHECKBOX
+- ✅ SV_RADIO/SV_RADIO_GROUP
+- ✅ SV_DROPDOWN/SV_SELECT
+- ✅ Demo: Login form (with harness tests + use-case JSONs)
 
-### Phase 3: Advanced Layouts (Tier 1)
-- [ ] SV_GRID
-- [ ] SV_STACK
-- [ ] SV_CARD/SV_PANEL
-- [ ] SV_TABS
-- [ ] SV_SCROLL
-- [ ] SV_SPLIT
-- [ ] SV_SPACER
-- [ ] SV_SEPARATOR
-- [ ] Demo: Complex layout
+### Phase 3: Advanced Layouts (Tier 1) ✅ COMPLETE
+- ✅ SV_GRID
+- ✅ SV_STACK
+- ✅ SV_CARD/SV_PANEL
+- ✅ SV_TABS (SV_TAB_PANEL)
+- ✅ SV_SCROLL
+- ✅ SV_SPLIT (SV_SPLITTER)
+- ✅ SV_SPACER
+- ✅ SV_SEPARATOR
+- ✅ Demo: Complex layout (with harness tests + use-case JSONs)
 
-### Phase 4: Data Widgets (Tier 1)
-- [ ] SV_LIST
-- [ ] SV_TREE
-- [ ] SV_DATA_GRID (leveraging EV_GRID)
-- [ ] SV_PROGRESS
-- [ ] SV_SLIDER
-- [ ] SV_STEPPER
-- [ ] Demo: Data browser
+### Phase 4: Data Widgets (Tier 1) ✅ COMPLETE
+- ✅ SV_LIST
+- ✅ SV_TREE
+- ✅ SV_DATA_GRID (leveraging EV_GRID)
+- ✅ SV_PROGRESS (SV_PROGRESS_BAR)
+- ✅ SV_SLIDER
+- ✅ SV_STEPPER (SV_SPIN_BOX)
+- ✅ SV_MENU_BAR, SV_MENU, SV_MENU_ITEM (bonus)
+- ✅ SV_TOOLBAR, SV_TOOLBAR_BUTTON (bonus)
+- ✅ SV_STATUSBAR (bonus)
+- ✅ Demo: Data browser (with harness tests + use-case JSONs)
 
-### Phase 5: Dialogs & Polish (Tier 1)
-- [ ] SV_DIALOG
-- [ ] SV_ALERT/SV_MESSAGE
-- [ ] SV_CONFIRM
-- [ ] SV_FILE_PICKER
-- [ ] SV_COLOR_PICKER
-- [ ] SV_FONT_PICKER
-- [ ] SV_IMAGE
-- [ ] Demo: Complete application
+### Phase 5: Dialogs & Polish (Tier 1) ✅ COMPLETE
+- ✅ SV_DIALOG
+- ✅ SV_ALERT/SV_MESSAGE (SV_MESSAGE_BOX)
+- ✅ SV_CONFIRM (in SV_MESSAGE_BOX)
+- ✅ SV_FILE_PICKER (SV_FILE_DIALOG)
+- ✅ SV_COLOR_PICKER
+- ✅ SV_FONT_PICKER
+- ✅ SV_IMAGE
+- ✅ Demo: Complete application (dialogs covered by widget tests)
 
 ### Phase 6: Styling & Theming (Tier 1)
-- [ ] SV_STYLE class
-- [ ] SV_THEME class
-- [ ] Light/Dark themes
-- [ ] Custom color schemes
-- [ ] Demo: Themed application
+- ✅ SV_COLOR class (hex parsing, lighten/darken, conversion)
+- ✅ SV_TOKENS class (semantic design tokens: colors, typography, spacing, borders)
+- ✅ SV_THEME class (singleton, theme switching, preference persistence)
+- ✅ Theme modes: Light, Dark, System (follows OS preference)
+- ✅ Color schemes: Material Purple (default), Blue, Green, Orange, Red, Teal
+- ✅ UI scaling (browser-style zoom 50%-300%, persisted to config)
+- ✅ Font scaling (separate from UI scale, for accessibility)
+- ✅ Preference file persistence (~/.simple_vision_prefs.json)
+- ✅ Add theme methods to SV_QUICK factory
+- ✅ Update SV_WIDGET base with apply_theme and subscribe_to_theme
+- ✅ Wire theme to SV_TEXT, SV_BUTTON, SV_WINDOW, SV_CARD, SV_ROW, SV_COLUMN
+- ✅ Wire theme to SV_TEXT_FIELD, SV_CHECKBOX, SV_DROPDOWN, SV_RADIO_GROUP
+- ✅ Wire theme to SV_TAB_PANEL, SV_SPLITTER, SV_DATA_GRID
+- ✅ Demo: Themed application (theme switcher, scale controls)
+- ⬜ Tests for styling/theming
+- ⬜ Use-case JSON for theme demo
+
+### Phase 6.5: Theme Polish & Grid Enhancements ✅ COMPLETE
+**Scale Application (Critical)**
+- ✅ Font scale: Apply theme.font_scale to all text widgets on creation and theme change
+- ✅ UI scale: Apply theme.ui_scale to widget sizes, spacing, padding
+- ✅ Replace `divider` with themed colored box (SV_DIVIDER uses EV_CELL, not EV_SEPARATOR)
+
+**Grid Enhancements**
+- ✅ SV_DATA_GRID column headers with clickable sorting (Asc/Desc/Natural cycle, [ASC]/[DESC] indicators)
+- ✅ SV_DATA_GRID row striping/zebra striping (theme-controlled surface_variant for alternate rows)
+
+**Input Enhancements**
+- ✅ Placeholder/explainer text for SV_TEXT_FIELD (focus in/out handlers, text_hint color)
+- ✅ SV_DECIMAL_FIELD with simple_decimal integration (precise currency/numeric input)
+
+**Demo: demo_grid.exe** - Shows sorting, striping, theme toggle, dynamic row addition
+
+**Known Windows Native Control Limitations (Accepted & Documented)**
+These are fundamental Windows behaviors that would require Tier 2/3 to resolve:
+- Dropdown popup list: White background (Windows-drawn, ignores custom colors)
+- EV_SEPARATOR: Gray system-styled line (workaround: use SV_DIVIDER instead)
+- Some button/checkbox styles: May not fully respect custom colors on all Windows versions
+
+### Phase 6.75: Field Masking & GUI Testing (COMPLETE)
+**Field Masking with simple_regex** ✅ COMPLETE
+- ✅ SV_MASKED_FIELD: Text field with regex-based input validation
+- ✅ Common masks: phone, SSN, date, email, ZIP, credit card, IP, time (18+ pre-built masks)
+- ✅ Real-time validation feedback (background color change on invalid input)
+- ✅ Factory methods in SV_QUICK: masked_field, phone_field, ssn_field, email_field, etc.
+- ✅ Demo: demo_masked.exe (7th demo in bin/)
+- ✅ **TRUE Input Masking** (character constraint + auto-insert literals):
+  - Input mask templates: `#` = digit, `A` = letter, `*` = alphanumeric, others = literal
+  - Key press interception filters invalid characters at input time
+  - Auto-inserts literal characters (parens, dashes, slashes, spaces)
+  - Masks: `(###) ###-####` (phone), `###-##-####` (SSN), `##/##/####` (date), etc.
+  - Validation-only fields (email, IP) retain flexible format with regex validation
+- ⬜ Apply masking capability to SV_TEXT_FIELD, SV_DECIMAL_FIELD (optional - SV_MASKED_FIELD covers use cases)
+
+**GUI Test Harness** (Deferred)
+- ⬜ Kamikaze agents for GUI simulation (short-lived agents that simulate user input)
+- ⬜ Screen pathway coverage (state machine model for exhaustive UI path testing)
+
+**Form Validation System** ✅ COMPLETE
+- ✅ SV_FORM: Form container with field management and validation
+- ✅ SV_FIELD: Individual field with fluent validation rules
+- ✅ Validation rules: SV_REQUIRED_RULE, SV_MIN_LENGTH_RULE, SV_MAX_LENGTH_RULE, SV_PATTERN_RULE, SV_EMAIL_RULE, SV_RANGE_RULE
+- ✅ Auto-build form UI from field definitions
+- ✅ Demo: demo_form.exe (8th demo in bin/)
+
+**Advanced Features** (Deferred to Phase 6.9)
+- ⬜ SV_OBSERVABLE / SV_BINDING: Reactive data binding for widgets
+- ⬜ SV_STATE_MACHINE: UI state management
+- ⬜ SV_CONSTRAINTS: Constraint-based layout
+- ⬜ SV_NAVIGATOR: Page routing/navigation stack
+- ⬜ SV_AI_BUILDER: Generate UI from natural language prompts
+
+**Extras from Innovations** (Deferred)
+- ⬜ Accessibility (a11y): Screen reader support, keyboard navigation
+- ⬜ Undo/Redo Stack: Widget state history
+- ⬜ Tooltips: Rich content tooltips
+- ⬜ Virtual Lists: Lazy loading for large datasets
+- ⬜ Hot Keys: Global keyboard shortcuts
 
 ### Phase 7: C Library Integration (Tier 2)
 - [ ] Create simple_cairo library (Cairo wrapper)
@@ -755,6 +832,50 @@ sv.window ("Settings")
 - [ ] docs/cookbook.html
 - [ ] README.md
 - [ ] Example applications
+
+---
+
+## Deferred / Circle-Back Items
+
+**Purpose:** Track items we've identified but intentionally deferred for later implementation. These are not forgotten - just prioritized for a future pass.
+
+### Theming Integration (from Phase 6)
+- [ ] **SV_WIDGET theme token integration** - Update all widget classes to use SV_TOKENS for colors, fonts, spacing instead of hardcoded values. This is a significant refactor affecting 20+ widget classes.
+  - Priority: Medium (current widgets work, just not fully themed)
+  - Effort: 1 session
+  - Dependency: Stable SV_TOKENS API
+
+### GUI Test Harness (from Phase 9)
+- [ ] **Kamikaze agents for GUI simulation** - Short-lived agents that simulate user input
+  - Priority: Low (manual testing works for now)
+  - Effort: 1-2 sessions
+  - Dependency: simple_process agent spawning
+
+- [ ] **Screen pathway coverage** - State machine model for exhaustive UI path testing
+  - Priority: Low (use-case JSONs cover happy paths)
+  - Effort: 1 session
+
+### Advanced Features
+- [ ] **SV_OBSERVABLE / SV_BINDING** - Reactive data binding for widgets
+  - Priority: Medium (enhances developer experience significantly)
+  - Effort: 0.5 session
+
+- [ ] **SV_FORM / SV_FIELD** - Form validation system
+  - Priority: Medium
+  - Effort: 1 session
+
+- [ ] **SV_STATE_MACHINE** - UI state management
+  - Priority: Low
+  - Effort: 0.5 session
+
+- [ ] **SV_CONSTRAINTS** - Constraint-based layout
+  - Priority: Low (current layouts work well)
+  - Effort: 0.5 session
+
+### Platform-Specific
+- [ ] **System dark mode detection** - Currently uses environment variable; could query Windows API
+  - Priority: Low (manual toggle works)
+  - Effort: 0.25 session
 
 ---
 

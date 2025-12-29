@@ -1523,6 +1523,7 @@ sv.window ("Editor")
 | 11 | **EV_GRID Enhancement** | Data grids with lazy loading, virtual scrolling, 1M+ rows | AG Grid, TanStack Table |
 | 12 | **C Library Integration** | Cairo gradients/shadows, stb images, cross-platform | Cairo, stb, webview |
 | 13 | **Hybrid Native + Web UI** | Blend native EV2 with web panels (HTMX, Alpine.js) | Electron, Tauri |
+| 14 | **GUI Testing Harness** | Automated GUI testing with AI visual validation | Selenium, Playwright, AI Vision |
 
 *i18n via existing simple_i18n library
 *Graphics enhanced by C libraries (Cairo, Blend2D) - see Innovation 12
@@ -3356,6 +3357,340 @@ my_app/
 │   └── theme.json      -- Custom theme (optional)
 └── my_app.ecf
 ```
+
+---
+
+# INNOVATION 14: GUI Testing Automation Harness
+
+## The Problem
+
+Testing GUI applications is traditionally:
+1. **Manual clicking** - Slow, unreliable, doesn't scale
+2. **Record/playback tools** - Brittle, break on layout changes
+3. **Accessibility-based automation** - Complex setup, platform-specific
+
+Most Eiffel GUI logic goes untested because the barrier is too high.
+
+## The Solution: SV_TEST_HARNESS
+
+A testing framework that treats simple_vision widgets like debuggable code, drawing inspiration from EiffelStudio's W_code debugger hooks.
+
+### Architecture Parallel
+
+| EiffelStudio Debugger | simple_vision Test Harness |
+|----------------------|---------------------------|
+| W_code (instrumented) | Widgets with logging hooks |
+| F_code (production) | Widgets with hooks disabled |
+| Breakpoints | Event injection points |
+| Object inspection | Widget state queries |
+| Step execution | Script-driven playback |
+| Debug output window | simple_logger output |
+
+### Three-Layer Testing
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Autotest (Unit/Integration)                                    │  ← Already have this
+├─────────────────────────────────────────────────────────────────┤
+│  simple_vision_test (GUI Automation Harness)                    │  ← NEW
+│  ┌─────────────────────────────────────────────────────────────┐│
+│  │ Script Player (JSON/TOML use-cases)                         ││
+│  │ Event Injector (mouse moves, clicks, keystrokes → EV)       ││
+│  │ simple_logger integration (what happened log)               ││
+│  └─────────────────────────────────────────────────────────────┘│
+├─────────────────────────────────────────────────────────────────┤
+│  simple_vision (GUI Library)                                    │
+│  - Widgets emit loggable events                                 │
+│  - All state is queryable                                       │
+│  - Optional instrumentation mode                                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## The Harness API
+
+### Widget Instrumentation (Built into SV_WIDGET)
+
+```eiffel
+feature {SV_TEST_HARNESS} -- Instrumentation (always present, cheap when disabled)
+
+    test_harness: detachable SV_TEST_HARNESS
+            -- Attached harness (like debugger attachment).
+
+    attach_harness (a_harness: SV_TEST_HARNESS)
+            -- Attach test harness to this widget.
+        do
+            test_harness := a_harness
+        end
+
+    notify_event (a_event: SV_EVENT)
+            -- Notify harness of widget event.
+        do
+            if attached test_harness as h then
+                h.record_event (Current, a_event)
+            end
+        end
+```
+
+### Test Harness Core
+
+```eiffel
+class SV_TEST_HARNESS
+
+feature -- Configuration
+    load_script (a_path: PATH)
+            -- Load JSON/TOML use-case script.
+
+    set_logger (a_logger: SIMPLE_LOGGER)
+            -- Configure logging destination.
+
+feature -- Script Playback
+    play
+            -- Execute all steps in loaded script.
+
+    step
+            -- Execute next step only.
+
+    pause
+    resume
+    stop
+
+feature -- Event Injection
+    simulate_click (a_widget: SV_WIDGET)
+    simulate_double_click (a_widget: SV_WIDGET)
+    simulate_key_press (a_key: INTEGER; a_modifiers: INTEGER)
+    simulate_key_sequence (a_text: STRING)
+    simulate_mouse_move (a_x, a_y: INTEGER)
+    simulate_drag_drop (a_from, a_to: SV_WIDGET)
+
+feature -- State Queries
+    assert_text (a_widget: SV_TEXT; a_expected: STRING)
+    assert_enabled (a_widget: SV_WIDGET)
+    assert_disabled (a_widget: SV_WIDGET)
+    assert_visible (a_widget: SV_WIDGET)
+    assert_hidden (a_widget: SV_WIDGET)
+    assert_focus (a_widget: SV_WIDGET)
+    assert_child_count (a_container: SV_CONTAINER; a_count: INTEGER)
+
+feature -- Event Recording
+    record_event (a_widget: SV_WIDGET; a_event: SV_EVENT)
+            -- Log event for verification.
+
+    events: LIST [TUPLE [widget: SV_WIDGET; event: SV_EVENT; timestamp: DATE_TIME]]
+            -- Recorded events for assertion.
+
+feature -- Recording Mode
+    start_recording
+            -- Record user interactions for playback.
+
+    stop_recording
+            -- Stop recording.
+
+    save_recording (a_path: PATH)
+            -- Save recorded interactions as script.
+end
+```
+
+### Use-Case Script Format (JSON)
+
+```json
+{
+  "name": "Login Flow",
+  "steps": [
+    { "action": "type", "target": "username_field", "value": "admin" },
+    { "action": "type", "target": "password_field", "value": "secret123" },
+    { "action": "click", "target": "login_button" },
+    { "action": "wait", "milliseconds": 500 },
+    { "action": "assert_visible", "target": "dashboard_panel" },
+    { "action": "assert_text", "target": "welcome_label", "value": "Welcome, Admin!" }
+  ]
+}
+```
+
+### Test Class Usage
+
+```eiffel
+class LOGIN_TESTS
+
+inherit
+    SIMPLE_TEST_SET
+
+feature -- Tests
+
+    test_successful_login
+        local
+            harness: SV_TEST_HARNESS
+            app: MY_APPLICATION
+        do
+            create harness.make
+            create app.make_for_testing (harness)
+
+            harness.load_script (test_data_path / "login_success.json")
+            harness.play
+
+            assert_true (harness.all_assertions_passed)
+        end
+
+    test_invalid_password
+        local
+            harness: SV_TEST_HARNESS
+            app: MY_APPLICATION
+        do
+            create harness.make
+            create app.make_for_testing (harness)
+
+            harness.simulate_key_sequence ("admin")
+            harness.simulate_click (app.login_form.password_field)
+            harness.simulate_key_sequence ("wrongpass")
+            harness.simulate_click (app.login_form.login_button)
+
+            assert_true (app.login_form.error_label.is_visible)
+            assert_text (app.login_form.error_label, "Invalid credentials")
+        end
+```
+
+## AI-Powered Visual Validation (Advanced)
+
+### The Problem with Layout Testing
+
+Automated testing can verify:
+- Widget state (enabled, visible, text content)
+- Event firing
+- Data binding
+
+But **cannot easily verify**:
+- Visual layout correctness
+- Color/font rendering
+- Spacing/alignment
+- Overall "does this look right?"
+
+### The AI Solution
+
+```eiffel
+class SV_AI_VISUAL_VALIDATOR
+
+feature -- Configuration
+    set_ai_client (a_client: SIMPLE_AI_CLIENT)
+            -- Configure Claude/GPT/Ollama connection.
+
+feature -- Capture
+    capture_window (a_window: SV_WINDOW): SV_SCREENSHOT
+            -- Capture window to clipboard/file.
+
+feature -- Validation
+    validate_against_description (a_screenshot: SV_SCREENSHOT; a_description: STRING): BOOLEAN
+            -- Ask AI: "Does this screenshot match this description?"
+            -- Returns True if AI confirms match.
+
+    validate_against_state (a_screenshot: SV_SCREENSHOT; a_state: STRING; a_state_descriptions: TABLE [STRING, STRING]): BOOLEAN
+            -- "Given state 'logged_in', does screenshot match the description for that state?"
+
+    describe_differences (a_current, a_expected: SV_SCREENSHOT): STRING
+            -- AI describes what's different between two screenshots.
+
+    suggest_fixes (a_screenshot: SV_SCREENSHOT; a_expected_description: STRING): STRING
+            -- AI suggests what code changes would fix visual issues.
+end
+```
+
+### State Machine Integration
+
+```eiffel
+class MY_APP_VISUAL_TESTS
+
+feature -- State Descriptions
+    state_descriptions: TABLE [STRING, STRING]
+        once
+            create Result.make (10)
+            Result.put ("A login form centered in the window with username field, ~
+                         password field, and blue Login button. Clean white background.",
+                        "initial")
+            Result.put ("The same login form but with a red error banner above the fields ~
+                         saying 'Invalid credentials'. The Login button should still be enabled.",
+                        "error")
+            Result.put ("A dashboard view with a left sidebar navigation, ~
+                         header showing 'Welcome, [username]', and a card grid layout.",
+                        "logged_in")
+        end
+
+feature -- Tests
+    test_visual_states
+        local
+            validator: SV_AI_VISUAL_VALIDATOR
+            harness: SV_TEST_HARNESS
+            screenshot: SV_SCREENSHOT
+        do
+            create validator.make
+            create harness.make
+
+            -- Initial state
+            screenshot := validator.capture_window (app.main_window)
+            assert_true (validator.validate_against_state (screenshot, "initial", state_descriptions))
+
+            -- Error state
+            harness.simulate_click (app.login_form.login_button)
+            harness.wait (500)
+            screenshot := validator.capture_window (app.main_window)
+            assert_true (validator.validate_against_state (screenshot, "error", state_descriptions))
+
+            -- Success state
+            harness.simulate_key_sequence ("admin")
+            harness.simulate_click (app.login_form.password_field)
+            harness.simulate_key_sequence ("correctpass")
+            harness.simulate_click (app.login_form.login_button)
+            harness.wait (1000)
+            screenshot := validator.capture_window (app.main_window)
+            assert_true (validator.validate_against_state (screenshot, "logged_in", state_descriptions))
+        end
+```
+
+## Implementation Notes
+
+### Phase 1 (Basic Harness)
+1. Widget instrumentation hooks (low overhead when disabled)
+2. Event injection (simulate_click, simulate_key)
+3. State assertions (assert_text, assert_visible)
+4. simple_logger integration
+
+### Phase 2 (Script-Driven)
+1. JSON/TOML script parser
+2. Script playback engine
+3. Recording mode (record user interactions)
+4. Step debugging
+
+### Phase 3 (AI Visual)
+1. Screenshot capture (clipboard integration)
+2. simple_ai_client integration
+3. State machine visual descriptions
+4. AI-powered "does this look right?" validation
+
+### Dependencies
+- simple_testing (test framework)
+- simple_logger (event logging)
+- simple_ai_client (visual validation, optional)
+- simple_json (script parsing)
+
+## Benefits
+
+1. **80% of GUI logic testable without human**
+   - Event handling
+   - Data binding
+   - State transitions
+   - Widget state
+
+2. **20% visual validation with AI assist**
+   - Layout correctness
+   - Visual regression
+   - "Does it look right?" checks
+
+3. **Integration with existing Autotest**
+   - GUI tests run alongside unit tests
+   - Same test infrastructure
+   - CI/CD compatible
+
+4. **Recording → Playback workflow**
+   - Humans/AI record use-cases once
+   - Scripts replay automatically
+   - Build test suite incrementally
 
 ---
 

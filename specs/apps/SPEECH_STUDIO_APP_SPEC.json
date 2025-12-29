@@ -1,0 +1,371 @@
+{
+  "$schema": "../protocols/APPLICATION_JSON_SPEC_PROTOCOL.md",
+  "spec_version": "1.0",
+  "generated": "2025-12-29",
+  "generator": "Claude + Larry Rix",
+
+  "app": {
+    "name": "Speech Studio",
+    "version": "1.0.0",
+    "description": "GUI frontend for simple_speech - transcribe audio/video to text with chapter detection, multi-format export, and AI enhancement",
+    "target": "Windows Desktop",
+    "primary_library": "simple_speech",
+    "ecf_target": "speech_studio",
+    "core_workflow": "Audio/Video -> FFmpeg Extract -> Whisper Transcription -> Segments -> Chapter Detection -> Export/Embed"
+  },
+
+  "architecture": {
+    "pattern": "layered",
+    "tiers": [
+      {"name": "gui", "technology": "simple_vision", "responsibility": "User interface, file dialogs, progress display"},
+      {"name": "business_logic", "technology": "speech_studio classes", "responsibility": "Workflow orchestration, job management"},
+      {"name": "speech_engine", "technology": "simple_speech", "responsibility": "Transcription, chapters, export, embedding"},
+      {"name": "data_abstraction", "technology": "simple_repository", "responsibility": "History and settings persistence"},
+      {"name": "persistence", "technology": "simple_sql (SQLite)", "responsibility": "Physical storage"}
+    ],
+    "external_dependencies": [
+      {"name": "FFmpeg", "purpose": "Audio extraction from video, metadata embedding", "required_for": "video files"},
+      {"name": "Whisper.cpp", "purpose": "Local speech-to-text via whisper-cli.exe", "required": true},
+      {"name": "Whisper Model", "purpose": "GGML model file (e.g., ggml-base.en.bin)", "required": true}
+    ]
+  },
+
+  "entities": [
+    {
+      "name": "MediaFile",
+      "description": "Source audio/video file for transcription",
+      "attributes": [
+        {"name": "file_path", "type": "STRING", "required": true},
+        {"name": "file_name", "type": "STRING", "computed": true},
+        {"name": "duration_seconds", "type": "REAL_64"},
+        {"name": "has_audio", "type": "BOOLEAN"},
+        {"name": "format", "type": "STRING"},
+        {"name": "file_size_bytes", "type": "INTEGER_64"}
+      ],
+      "supported_formats": ["MP3", "WAV", "MP4", "AVI", "MKV", "MOV", "WEBM", "OGG", "FLAC", "M4A"]
+    },
+    {
+      "name": "TranscriptionSegment",
+      "description": "Single transcribed text segment with timing",
+      "simple_speech_class": "SPEECH_SEGMENT",
+      "attributes": [
+        {"name": "text", "type": "STRING", "required": true},
+        {"name": "start_time", "type": "REAL_64", "required": true, "unit": "seconds"},
+        {"name": "end_time", "type": "REAL_64", "required": true, "unit": "seconds"}
+      ]
+    },
+    {
+      "name": "Chapter",
+      "description": "Auto-detected chapter boundary",
+      "simple_speech_class": "SPEECH_CHAPTER",
+      "attributes": [
+        {"name": "title", "type": "STRING", "required": true},
+        {"name": "start_time", "type": "REAL_64", "required": true},
+        {"name": "end_time", "type": "REAL_64", "required": true},
+        {"name": "transition_type", "type": "ENUM", "values": ["explicit", "sequence", "topic_shift", "temporal", "spatial"]},
+        {"name": "confidence", "type": "REAL_64", "range": [0.0, 1.0]}
+      ],
+      "detection_info": "Uses SPEECH_TRANSITION_DETECTOR with 45+ phrase patterns"
+    },
+    {
+      "name": "TranscriptionHistory",
+      "description": "Persisted record of completed transcriptions",
+      "attributes": [
+        {"name": "id", "type": "UUID", "generated": true},
+        {"name": "file_path", "type": "STRING"},
+        {"name": "file_name", "type": "STRING"},
+        {"name": "transcribed_at", "type": "DATETIME"},
+        {"name": "segment_count", "type": "INTEGER"},
+        {"name": "chapter_count", "type": "INTEGER"},
+        {"name": "duration_seconds", "type": "REAL_64"},
+        {"name": "export_path", "type": "STRING"},
+        {"name": "export_format", "type": "STRING"}
+      ]
+    },
+    {
+      "name": "TranscriptionSettings",
+      "description": "User preferences",
+      "attributes": [
+        {"name": "whisper_model_path", "type": "STRING", "default": "models/ggml-base.en.bin"},
+        {"name": "language", "type": "STRING", "default": "auto", "note": "99+ languages supported"},
+        {"name": "translate_to_english", "type": "BOOLEAN", "default": false},
+        {"name": "thread_count", "type": "INTEGER", "default": 4},
+        {"name": "detect_chapters", "type": "BOOLEAN", "default": true},
+        {"name": "chapter_sensitivity", "type": "ENUM", "values": ["low", "medium", "high"], "default": "medium"},
+        {"name": "min_chapter_duration", "type": "REAL_64", "default": 30.0, "unit": "seconds"},
+        {"name": "default_export_format", "type": "ENUM", "values": ["vtt", "srt", "json", "txt"], "default": "vtt"},
+        {"name": "default_output_folder", "type": "STRING", "default": ""}
+      ]
+    },
+    {
+      "name": "AISettings",
+      "description": "AI enhancement configuration",
+      "attributes": [
+        {"name": "enabled", "type": "BOOLEAN", "default": false},
+        {"name": "provider", "type": "ENUM", "values": ["ollama", "anthropic", "openai", "gemini", "xai"], "default": "ollama"},
+        {"name": "api_key", "type": "STRING", "sensitive": true},
+        {"name": "ollama_model", "type": "STRING", "default": "llama3.2"}
+      ]
+    }
+  ],
+
+  "services": [
+    {
+      "name": "TranscriptionService",
+      "description": "Orchestrates transcription using simple_speech",
+      "simple_speech_classes": ["SPEECH_QUICK", "SPEECH_PIPELINE", "SIMPLE_SPEECH"],
+      "operations": [
+        {"name": "transcribe", "maps_to": "SPEECH_QUICK.transcribe(file)", "returns": "LIST[TranscriptionSegment]"},
+        {"name": "detect_chapters", "maps_to": "SPEECH_QUICK.detect_chapters", "returns": "LIST[Chapter]"},
+        {"name": "process_video", "maps_to": "SPEECH_QUICK.process_video(input, output)", "note": "Complete workflow"}
+      ],
+      "configuration": [
+        {"setting": "language", "maps_to": "SPEECH_PIPELINE.set_language"},
+        {"setting": "translate", "maps_to": "SPEECH_PIPELINE.set_translate"},
+        {"setting": "sensitivity", "maps_to": "SPEECH_TRANSITION_DETECTOR.set_sensitivity"}
+      ]
+    },
+    {
+      "name": "ExportService",
+      "description": "Export to VTT, SRT, JSON, TXT or embed in video",
+      "simple_speech_classes": ["VTT_EXPORTER", "SRT_EXPORTER", "JSON_EXPORTER", "TXT_EXPORTER", "SPEECH_VIDEO_EMBEDDER"],
+      "operations": [
+        {"name": "export_vtt", "maps_to": "SPEECH_QUICK.export_vtt(path)"},
+        {"name": "export_srt", "maps_to": "SPEECH_QUICK.export_srt(path)"},
+        {"name": "export_json", "maps_to": "SPEECH_QUICK.export_json(path)"},
+        {"name": "export_chapters_vtt", "maps_to": "SPEECH_QUICK.export_chapters_vtt(path)"},
+        {"name": "embed_captions", "maps_to": "SPEECH_VIDEO_EMBEDDER.embed_captions"},
+        {"name": "embed_chapters", "maps_to": "SPEECH_VIDEO_EMBEDDER.embed_chapters"},
+        {"name": "embed_all", "maps_to": "SPEECH_VIDEO_EMBEDDER.embed_all", "note": "Both captions and chapters"}
+      ]
+    },
+    {
+      "name": "AIEnhancementService",
+      "description": "AI-powered transcript enhancement",
+      "simple_speech_classes": ["SPEECH_AI_ENHANCER"],
+      "operations": [
+        {"name": "correct", "maps_to": "SPEECH_AI_ENHANCER.correct(segments)", "returns": "LIST[TranscriptionSegment]"},
+        {"name": "translate", "maps_to": "SPEECH_AI_ENHANCER.translate(segments, language)", "returns": "LIST[TranscriptionSegment]"},
+        {"name": "summarize", "maps_to": "SPEECH_AI_ENHANCER.summarize(segments)", "returns": "STRING"},
+        {"name": "summarize_with_format", "maps_to": "SPEECH_AI_ENHANCER.summarize_with_format(segments, format)", "formats": ["bullets", "paragraphs", "outline", "action_items"]}
+      ]
+    },
+    {
+      "name": "BatchService",
+      "description": "Process multiple files",
+      "simple_speech_classes": ["SPEECH_BATCH_PROCESSOR"],
+      "operations": [
+        {"name": "add_file", "maps_to": "SPEECH_BATCH_PROCESSOR.add_file(path)"},
+        {"name": "set_output_folder", "maps_to": "SPEECH_BATCH_PROCESSOR.set_output_folder(path)"},
+        {"name": "set_format", "maps_to": "SPEECH_BATCH_PROCESSOR.set_format(format)"},
+        {"name": "run", "maps_to": "SPEECH_BATCH_PROCESSOR.run", "async": true},
+        {"name": "set_progress_callback", "maps_to": "SPEECH_BATCH_PROCESSOR.set_progress_callback"}
+      ],
+      "progress_info": "SPEECH_PROGRESS_INFO provides current_file, phase, succeeded, failed counts"
+    }
+  ],
+
+  "use_cases": [
+    {
+      "id": "UC001",
+      "name": "Transcribe Single File",
+      "actor": "User",
+      "goal": "Convert audio/video to text transcript",
+      "preconditions": ["Whisper model configured", "FFmpeg available for video"],
+      "main_flow": [
+        "User opens audio/video file (dialog or drag-drop)",
+        "System probes file, shows info (duration, format, has_audio)",
+        "User adjusts settings (language, chapters, translate)",
+        "User clicks Transcribe",
+        "System extracts audio if video (FFmpeg to 16kHz mono WAV)",
+        "System transcribes via Whisper, shows segment count",
+        "System detects chapters if enabled",
+        "System displays segments with timestamps",
+        "User can edit segment text, scroll chapters"
+      ],
+      "simple_speech_flow": [
+        "create SPEECH_QUICK.make_with_model(model_path)",
+        "quick.transcribe(file_path)",
+        "quick.detect_chapters (if enabled)",
+        "Access quick.segments and quick.chapters"
+      ]
+    },
+    {
+      "id": "UC002",
+      "name": "Export Transcript",
+      "preconditions": ["Transcription completed (segments exist)"],
+      "main_flow": [
+        "User clicks Export, selects format",
+        "System saves to chosen path",
+        "History entry created"
+      ],
+      "export_formats": [
+        {"format": "VTT", "extension": ".vtt", "use": "Web video players, YouTube"},
+        {"format": "SRT", "extension": ".srt", "use": "Video players, editors"},
+        {"format": "JSON", "extension": ".json", "use": "Programmatic access, includes chapters"},
+        {"format": "TXT", "extension": ".txt", "use": "Plain text, reading"}
+      ],
+      "embed_in_video": {
+        "precondition": "Source was video file",
+        "options": ["Captions only", "Chapters only", "Both"],
+        "note": "Creates new video file, preserves original"
+      }
+    },
+    {
+      "id": "UC003",
+      "name": "AI Enhancement",
+      "preconditions": ["Transcription completed", "AI provider configured"],
+      "operations": [
+        {"action": "Correct", "description": "Fix transcription errors using AI", "updates": "segments in place"},
+        {"action": "Translate", "description": "Translate to target language", "updates": "segments replaced"},
+        {"action": "Summarize", "description": "Generate summary", "formats": ["bullets", "paragraphs", "outline", "action_items"]}
+      ]
+    },
+    {
+      "id": "UC004",
+      "name": "Batch Processing",
+      "main_flow": [
+        "User adds multiple files to queue",
+        "User sets output folder and format",
+        "User clicks Start Batch",
+        "System processes sequentially with progress",
+        "Summary shows succeeded/failed"
+      ],
+      "simple_speech_flow": [
+        "create SPEECH_BATCH_PROCESSOR.make(pipeline)",
+        "batch.add_file(path) for each file",
+        "batch.set_output_folder(folder).set_format(fmt)",
+        "batch.set_progress_callback(agent callback)",
+        "batch.run"
+      ]
+    }
+  ],
+
+  "state_machines": [
+    {
+      "name": "MainStateMachine",
+      "initial": "idle",
+      "states": [
+        {"id": "idle", "description": "No file loaded", "enabled": ["btn_open", "btn_batch", "btn_settings"]},
+        {"id": "file_loaded", "description": "File probed, ready to transcribe", "enabled": ["btn_open", "btn_transcribe", "settings_panel"]},
+        {"id": "transcribing", "description": "Transcription in progress", "enabled": ["btn_cancel"]},
+        {"id": "completed", "description": "Transcript ready", "enabled": ["btn_open", "btn_transcribe", "btn_export", "btn_ai", "segment_list", "chapter_list"]},
+        {"id": "exporting", "description": "Export in progress", "enabled": []},
+        {"id": "error", "description": "Error occurred", "enabled": ["btn_open", "btn_settings"]}
+      ],
+      "transitions": [
+        {"from": "idle", "to": "file_loaded", "event": "file_opened", "guard": "has_audio"},
+        {"from": "idle", "to": "error", "event": "file_opened", "guard": "no_audio"},
+        {"from": "file_loaded", "to": "transcribing", "event": "transcribe_clicked"},
+        {"from": "file_loaded", "to": "file_loaded", "event": "file_opened"},
+        {"from": "transcribing", "to": "completed", "event": "transcription_done"},
+        {"from": "transcribing", "to": "error", "event": "transcription_failed"},
+        {"from": "transcribing", "to": "idle", "event": "cancelled"},
+        {"from": "completed", "to": "exporting", "event": "export_clicked"},
+        {"from": "completed", "to": "file_loaded", "event": "file_opened"},
+        {"from": "completed", "to": "transcribing", "event": "transcribe_clicked"},
+        {"from": "exporting", "to": "completed", "event": "export_done"},
+        {"from": "error", "to": "idle", "event": "dismissed"},
+        {"from": "error", "to": "file_loaded", "event": "file_opened"}
+      ]
+    }
+  ],
+
+  "gui": {
+    "theme": "dark",
+    "windows": [
+      {
+        "id": "main_window",
+        "title": "Speech Studio",
+        "size": {"width": 1200, "height": 800},
+        "layout": {
+          "type": "vertical",
+          "children": [
+            {
+              "id": "toolbar",
+              "type": "toolbar",
+              "widgets": [
+                {"id": "btn_open", "type": "button", "text": "Open File", "icon": "folder"},
+                {"id": "btn_transcribe", "type": "button", "text": "Transcribe", "style": "primary"},
+                {"id": "btn_cancel", "type": "button", "text": "Cancel", "visible_when": "transcribing"},
+                {"type": "separator"},
+                {"id": "btn_export", "type": "dropdown", "text": "Export", "items": ["VTT", "SRT", "JSON", "TXT", "---", "Embed in Video"]},
+                {"id": "btn_ai", "type": "dropdown", "text": "AI Enhance", "items": ["Correct", "Translate...", "Summarize..."]},
+                {"type": "spacer"},
+                {"id": "btn_batch", "type": "button", "text": "Batch"},
+                {"id": "btn_history", "type": "button", "text": "History"},
+                {"id": "btn_settings", "type": "button", "text": "Settings"}
+              ]
+            },
+            {
+              "id": "main_split",
+              "type": "horizontal_split",
+              "children": [
+                {
+                  "id": "left_panel",
+                  "width": 280,
+                  "children": [
+                    {"id": "file_info", "type": "group", "title": "File Info"},
+                    {"id": "settings_group", "type": "group", "title": "Settings"},
+                    {"id": "chapter_list", "type": "list", "title": "Chapters", "flex": 1}
+                  ]
+                },
+                {
+                  "id": "center_panel",
+                  "flex": 1,
+                  "children": [
+                    {"id": "progress_group", "type": "group", "visible_when": "transcribing"},
+                    {"id": "segment_list", "type": "virtual_list", "flex": 1},
+                    {"id": "empty_state", "type": "placeholder", "visible_when": "idle", "text": "Open an audio or video file to begin transcription"}
+                  ]
+                }
+              ]
+            },
+            {"id": "status_bar", "type": "statusbar"}
+          ]
+        }
+      }
+    ],
+    "dialogs": [
+      {"id": "settings_dialog", "title": "Settings", "tabs": ["General", "Transcription", "Chapters", "AI", "Paths"]},
+      {"id": "batch_dialog", "title": "Batch Processing"},
+      {"id": "history_dialog", "title": "History"},
+      {"id": "translate_dialog", "title": "Translate"},
+      {"id": "summarize_dialog", "title": "Summarize"},
+      {"id": "embed_dialog", "title": "Embed in Video"}
+    ]
+  },
+
+  "persistence": {
+    "database": "speech_studio.db",
+    "tables": [
+      {"name": "transcription_history", "entity": "TranscriptionHistory"},
+      {"name": "settings", "key_value": true}
+    ]
+  },
+
+  "errors": [
+    {"code": "NO_AUDIO", "message": "File has no audio track", "recovery": "Select file with audio"},
+    {"code": "MODEL_MISSING", "message": "Whisper model not found", "recovery": "Configure in Settings"},
+    {"code": "FFMPEG_MISSING", "message": "FFmpeg required for video", "recovery": "Install FFmpeg"},
+    {"code": "TRANSCRIPTION_FAILED", "message": "Whisper transcription error", "recovery": "Check model, retry"},
+    {"code": "EXPORT_FAILED", "message": "Cannot write to path", "recovery": "Choose different location"},
+    {"code": "AI_ERROR", "message": "AI provider error", "recovery": "Check API key, retry"}
+  ],
+
+  "traceability": {
+    "simple_speech_mapping": {
+      "SPEECH_QUICK": "Primary facade for transcription workflow",
+      "SPEECH_PIPELINE": "Video processing (FFmpeg + Whisper)",
+      "SIMPLE_SPEECH": "Low-level WAV transcription",
+      "SPEECH_TRANSITION_DETECTOR": "45+ patterns for chapter detection",
+      "VTT_EXPORTER": "WebVTT output",
+      "SRT_EXPORTER": "SubRip output",
+      "JSON_EXPORTER": "JSON with segments and chapters",
+      "TXT_EXPORTER": "Plain text",
+      "SPEECH_VIDEO_EMBEDDER": "Embed metadata in video containers",
+      "SPEECH_AI_ENHANCER": "AI correction, translation, summarization",
+      "SPEECH_BATCH_PROCESSOR": "Multi-file processing with progress"
+    }
+  }
+}
