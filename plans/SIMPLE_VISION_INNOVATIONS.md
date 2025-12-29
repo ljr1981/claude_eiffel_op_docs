@@ -1799,6 +1799,649 @@ The point isn't to add indirection — it's **discoverability**:
 
 ---
 
+# INNOVATION 12: C Library Integration (Raising the Bar)
+
+## The Opportunity
+
+EV2 is cross-platform but dated. Modern C libraries can fill gaps:
+
+| EV2 Limitation | C Library Solution |
+|----------------|-------------------|
+| No gradients | Cairo, Blend2D |
+| No shadows | Cairo (simulated), Blend2D |
+| Basic anti-aliasing | NanoVG, Cairo, Blend2D |
+| No GPU acceleration | NanoVG (OpenGL), Blend2D |
+| No rich text/HTML | webview, Ultralight |
+| Basic charts | PLplot |
+| Limited image formats | stb_image |
+| Basic font rendering | stb_truetype, FreeType |
+
+## Candidate Libraries (All Cross-Platform: Win/Linux/Mac)
+
+### Tier 1: High Value, Low Risk
+
+#### 1. stb Libraries (Public Domain)
+Single-header, trivial to integrate via inline C:
+
+| Library | Purpose | Complexity |
+|---------|---------|------------|
+| [stb_image](https://github.com/nothings/stb) | Load PNG, JPG, BMP, GIF, etc. | Very Low |
+| [stb_image_write](https://github.com/nothings/stb) | Write PNG, JPG, BMP | Very Low |
+| [stb_truetype](https://github.com/nothings/stb) | TrueType font rasterization | Low |
+
+```eiffel
+-- Integration pattern (inline C):
+class SV_IMAGE_LOADER
+feature {NONE} -- C externals
+    c_load_image (a_path: POINTER; out_w, out_h, out_channels: POINTER): POINTER
+        external "C inline use %"stb_image.h%""
+        alias "[
+            #define STB_IMAGE_IMPLEMENTATION
+            #include "stb_image.h"
+            return stbi_load((const char*)$a_path, (int*)$out_w, (int*)$out_h, (int*)$out_channels, 0);
+        ]"
+        end
+end
+```
+
+#### 2. webview/webview (MIT License)
+Embed HTML/CSS/JS in native apps — tiny footprint:
+
+| Platform | Backend |
+|----------|---------|
+| Windows | Edge WebView2 |
+| Linux | WebKit2 (GTK) |
+| macOS | WKWebView |
+
+```eiffel
+class SV_WEB_VIEW inherit SV_WIDGET
+feature
+    load_url (a_url: STRING)
+    load_html (a_html: STRING)
+    execute_js (a_script: STRING): STRING
+    on_message: SV_ACTION_SEQUENCE [TUPLE [message: STRING]]
+        -- JS can send messages to Eiffel
+end
+
+-- Usage: embed rich content
+sv.web_view
+    .load_html ("<h1>Dashboard</h1><div id='chart'></div>")
+    .execute_js ("renderChart(data)")
+```
+
+**Use Cases:**
+- Rich text editing (HTML contenteditable)
+- Charts (Chart.js, D3.js)
+- Markdown preview
+- Documentation viewer
+- Complex forms
+
+#### 3. Cairo (LGPL/MPL)
+Mature 2D vector graphics — already used by GTK on Linux:
+
+| Feature | EV2 | Cairo |
+|---------|-----|-------|
+| Gradients | No | Yes (linear, radial) |
+| Shadows | No | Yes (via blur) |
+| Anti-aliasing | Basic | Excellent |
+| Path operations | Limited | Full |
+| PDF/SVG export | No | Yes |
+
+```eiffel
+class SV_CAIRO_CANVAS inherit SV_WIDGET
+feature
+    -- Drawing
+    set_source_linear_gradient (x0, y0, x1, y1: REAL; stops: ARRAY [TUPLE [offset: REAL; color: SV_COLOR]])
+    set_source_radial_gradient (...)
+    fill_rounded_rect (x, y, w, h, radius: REAL)
+    draw_shadow (x, y, w, h, blur, spread: REAL; color: SV_COLOR)
+
+    -- Export
+    export_to_pdf (a_path: STRING)
+    export_to_svg (a_path: STRING)
+end
+
+-- Usage
+sv.cairo_canvas
+    .set_source_linear_gradient (0, 0, 0, 100, <<[0.0, sv.colors.primary], [1.0, sv.colors.primary_dark]>>)
+    .fill_rounded_rect (10, 10, 200, 100, 8)
+```
+
+### Tier 2: Medium Value, Medium Risk
+
+#### 4. Blend2D (Zlib License)
+High-performance 2D graphics engine:
+
+- **Pros:** Modern, fast, active development, C API available
+- **Cons:** Larger dependency than stb
+
+```eiffel
+class SV_BLEND2D_CANVAS inherit SV_WIDGET
+feature
+    -- High-performance 2D drawing
+    gradient_fill (...)
+    blur_effect (...)
+    composition_modes (...)  -- Porter-Duff, etc.
+end
+```
+
+#### 5. PLplot (LGPL)
+Scientific plotting library:
+
+```eiffel
+class SV_CHART inherit SV_WIDGET
+feature
+    -- Chart types
+    line_chart (data: ARRAY [TUPLE [x, y: REAL]])
+    bar_chart (data: ARRAY [TUPLE [label: STRING; value: REAL]])
+    pie_chart (data: ARRAY [TUPLE [label: STRING; value: REAL]])
+    scatter_plot (...)
+    histogram (...)
+
+    -- Configuration
+    title (a_title: STRING): like Current
+    x_axis_label (a_label: STRING): like Current
+    y_axis_label (a_label: STRING): like Current
+    legend (a_position: INTEGER): like Current
+end
+
+-- Usage
+sv.chart
+    .line_chart (sales_data)
+    .title ("Monthly Sales")
+    .x_axis_label ("Month")
+    .y_axis_label ("Revenue ($)")
+```
+
+### Tier 3: High Value, Higher Risk
+
+#### 6. Ultralight (Commercial/Free Tier)
+GPU-accelerated HTML/CSS/JS renderer — more powerful than webview:
+
+- **Pros:** Full browser capabilities, GPU acceleration, smaller than Chromium
+- **Cons:** Commercial license for some uses, larger dependency
+
+```eiffel
+class SV_ULTRALIGHT_VIEW inherit SV_WIDGET
+feature
+    -- Full browser capabilities
+    load_url (a_url: STRING)
+    load_html (a_html: STRING)
+
+    -- Bidirectional JS integration
+    bind_function (a_name: STRING; a_callback: PROCEDURE [...])
+        -- Expose Eiffel function to JavaScript
+
+    call_js (a_function: STRING; a_args: ARRAY [ANY]): ANY
+        -- Call JavaScript function from Eiffel
+end
+```
+
+## Integration Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      simple_vision (SV_*)                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │ SV_WIDGET   │  │ SV_CANVAS   │  │ SV_WEB_VIEW         │ │
+│  │ (EV2-based) │  │ (C-enhanced)│  │ (HTML/CSS/JS)       │ │
+│  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘ │
+│         │                │                     │            │
+│         ▼                ▼                     ▼            │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
+│  │ EiffelVision│  │ Cairo/      │  │ webview / Ultralight│ │
+│  │ 2 (EV_*)    │  │ Blend2D     │  │                     │ │
+│  └─────────────┘  └─────────────┘  └─────────────────────┘ │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ stb_image, stb_truetype, PLplot (utilities)         │   │
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Practical Integration: simple_cairo, simple_webview
+
+Following the simple_* pattern, create focused libraries:
+
+### simple_cairo (D:\prod\simple_cairo)
+```eiffel
+class SIMPLE_CAIRO
+feature
+    -- Surface management
+    create_image_surface (width, height: INTEGER): CAIRO_SURFACE
+    create_svg_surface (path: STRING; width, height: REAL): CAIRO_SURFACE
+    create_pdf_surface (path: STRING; width, height: REAL): CAIRO_SURFACE
+
+    -- Drawing context
+    create_context (surface: CAIRO_SURFACE): CAIRO_CONTEXT
+
+    -- In CAIRO_CONTEXT:
+    set_source_rgb (r, g, b: REAL)
+    set_source_rgba (r, g, b, a: REAL)
+    set_source_linear_gradient (...)
+    set_source_radial_gradient (...)
+
+    move_to (x, y: REAL)
+    line_to (x, y: REAL)
+    curve_to (...)
+    arc (...)
+    rectangle (x, y, w, h: REAL)
+    rounded_rectangle (x, y, w, h, radius: REAL)
+
+    fill
+    stroke
+    clip
+end
+```
+
+### simple_webview (D:\prod\simple_webview)
+```eiffel
+class SIMPLE_WEBVIEW
+feature
+    make (a_title: STRING; a_width, a_height: INTEGER)
+
+    navigate (a_url: STRING)
+    set_html (a_html: STRING)
+
+    eval (a_js: STRING)
+    bind (a_name: STRING; a_callback: PROCEDURE [TUPLE [request: STRING]])
+
+    run  -- Event loop
+    terminate
+end
+```
+
+Then simple_vision uses them:
+```eiffel
+class SV_CAIRO_PANEL inherit SV_WIDGET
+feature {NONE}
+    cairo: SIMPLE_CAIRO  -- Uses simple_cairo internally
+end
+
+class SV_WEB_PANEL inherit SV_WIDGET
+feature {NONE}
+    webview: SIMPLE_WEBVIEW  -- Uses simple_webview internally
+end
+```
+
+## Recommended Implementation Order
+
+| Priority | Library | Effort | Value |
+|----------|---------|--------|-------|
+| 1 | stb_image/stb_image_write | 1 day | Image format support |
+| 2 | webview/webview | 2-3 days | Rich content, charts, markdown |
+| 3 | Cairo | 1 week | Gradients, shadows, PDF export |
+| 4 | stb_truetype | 2-3 days | Custom font rendering |
+| 5 | PLplot | 1 week | Native charts |
+| 6 | Blend2D | 1-2 weeks | High-performance graphics |
+
+## What This Enables
+
+| Feature | Before (EV2 only) | After (C-enhanced) |
+|---------|-------------------|-------------------|
+| Gradients | Not possible | Full linear/radial |
+| Shadows | Not possible | Cairo blur simulation |
+| Charts | Manual drawing | PLplot or Chart.js via webview |
+| Rich text | Plain text only | HTML via webview |
+| PDF export | Not built-in | Cairo PDF surface |
+| Image formats | Limited | All major formats via stb |
+| Modern UI | 1990s look | 2025 look with webview |
+
+---
+
+# INNOVATION 13: Hybrid Native + Web UI (The Ultimate Blend)
+
+## The Vision: Best of Both Worlds
+
+Combine:
+- **Native EV2 widgets** for system integration, performance
+- **Web panels (webview)** for modern UI, rich content
+- **simple_htmx** for declarative HTML interactions
+- **simple_alpine** for reactive JavaScript
+- **Eiffel backend** for business logic, data, security
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    simple_vision App                        │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────────────────────┐  │
+│  │ Native Toolbar  │  │ Web Panel (SV_WEB_VIEW)         │  │
+│  │ (SV_TOOLBAR)    │  │                                 │  │
+│  │  [File] [Edit]  │  │  ┌─────────────────────────┐   │  │
+│  └─────────────────┘  │  │ HTMX + Alpine.js UI     │   │  │
+│                       │  │                         │   │  │
+│  ┌─────────────────┐  │  │ <div x-data="...">     │   │  │
+│  │ Native Sidebar  │  │  │   <button hx-get=...>  │   │  │
+│  │ (SV_TREE)       │  │  │   Modern widgets!      │   │  │
+│  │  📁 Projects    │  │  │ </div>                 │   │  │
+│  │  📁 Tasks       │  │  └─────────────────────────┘   │  │
+│  │  📁 Reports     │  │                                 │  │
+│  └─────────────────┘  │  Rendered by webview            │  │
+│                       └─────────────────────────────────┘  │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ Native Status Bar (SV_STATUS_BAR)                   │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## The Stack
+
+| Layer | Technology | Role |
+|-------|------------|------|
+| **Presentation** | HTMX + Alpine.js | Declarative, reactive HTML |
+| **Rendering** | webview (Edge/WebKit) | Cross-platform browser |
+| **Bridge** | simple_webview | Eiffel ↔ JS communication |
+| **Templates** | simple_htmx, simple_alpine | Generate HTML from Eiffel |
+| **Logic** | simple_vision + simple_* | Business logic, data access |
+| **Native** | EV2 widgets | System menus, toolbars, dialogs |
+
+## Eiffel-Driven Web UI
+
+### Using simple_htmx to Generate HTML
+
+```eiffel
+class MY_DASHBOARD inherit SV_APPLICATION
+
+feature
+    web_content: SV_WEB_VIEW
+
+    build_ui
+        local
+            htmx: SIMPLE_HTMX
+            html: STRING
+        do
+            create htmx.make
+
+            html := htmx.div ([
+                htmx.h1 ("Dashboard"),
+
+                -- HTMX-powered search (calls Eiffel backend!)
+                htmx.input_text ("search")
+                    .hx_get ("/api/search")
+                    .hx_trigger ("keyup changed delay:500ms")
+                    .hx_target ("#results"),
+
+                htmx.div_id ("results", ""),
+
+                -- Alpine.js reactive component
+                htmx.div ([
+                    htmx.raw ("<div x-data='{ count: 0 }'>"),
+                    htmx.raw ("  <button @click='count++'>Clicked: <span x-text='count'></span></button>"),
+                    htmx.raw ("</div>")
+                ])
+            ])
+
+            web_content.load_html (htmx.full_page ("Dashboard", html))
+        end
+```
+
+### Bidirectional Communication
+
+```eiffel
+class SV_WEB_BRIDGE
+    -- Connects Eiffel backend to web frontend
+
+feature -- Eiffel → JavaScript
+    send_data (a_name: STRING; a_json: JSON_OBJECT)
+        -- Push data to web panel
+        do
+            web_view.execute_js ("window.eiffelBridge.receive('" + a_name + "', " + a_json.representation + ")")
+        end
+
+    update_element (a_id: STRING; a_html: STRING)
+        -- Update DOM element
+        do
+            web_view.execute_js ("document.getElementById('" + a_id + "').innerHTML = `" + a_html + "`")
+        end
+
+feature -- JavaScript → Eiffel
+    on_js_call: SV_ACTION_SEQUENCE [TUPLE [method: STRING; args: JSON_ARRAY]]
+        -- Handle calls from JavaScript
+
+    bind_handler (a_method: STRING; a_handler: PROCEDURE [JSON_ARRAY])
+        -- Register Eiffel handler for JS method
+        do
+            web_view.bind (a_method, agent handle_js_call (a_method, ?))
+        end
+
+feature {NONE}
+    handle_js_call (a_method: STRING; a_args_json: STRING)
+        local
+            args: JSON_ARRAY
+        do
+            create args.make_from_string (a_args_json)
+            if attached handlers.item (a_method) as h then
+                h.call ([args])
+            end
+        end
+```
+
+### HTMX with Eiffel Backend
+
+```eiffel
+-- In JavaScript (web panel):
+-- <button hx-get="/api/users" hx-target="#user-list">Load Users</button>
+
+-- Eiffel handles the "API" call:
+class MY_APP_BRIDGE inherit SV_WEB_BRIDGE
+
+feature
+    setup_handlers
+        do
+            bind_route ("/api/users", agent handle_get_users)
+            bind_route ("/api/search", agent handle_search)
+            bind_route ("/api/user/:id", agent handle_get_user)
+        end
+
+    handle_get_users (a_request: SV_WEB_REQUEST): STRING
+        local
+            htmx: SIMPLE_HTMX
+            users: LIST [USER]
+        do
+            users := user_repository.get_all
+
+            create htmx.make
+            Result := htmx.table ([
+                htmx.thead ([htmx.tr ([htmx.th ("Name"), htmx.th ("Email")])]),
+                htmx.tbody (
+                    users.collect (agent (u: USER): STRING
+                        do
+                            Result := htmx.tr ([
+                                htmx.td (u.name),
+                                htmx.td (u.email)
+                            ])
+                        end
+                    )
+                )
+            ])
+        end
+
+    handle_search (a_request: SV_WEB_REQUEST): STRING
+        local
+            query: STRING
+            results: LIST [ITEM]
+        do
+            query := a_request.param ("search")
+            results := search_service.search (query)
+            Result := render_search_results (results)
+        end
+```
+
+## Pre-Built Hybrid Components
+
+### SV_RICH_EDITOR (Web-based rich text)
+```eiffel
+class SV_RICH_EDITOR inherit SV_WEB_VIEW
+feature
+    content: SV_OBSERVABLE [STRING]
+        -- HTML content, reactive
+
+    set_content (a_html: STRING)
+    get_content: STRING
+    get_plain_text: STRING
+
+    -- Toolbar
+    bold, italic, underline, strike_through
+    heading (a_level: INTEGER)
+    bullet_list, numbered_list
+    insert_link (a_url, a_text: STRING)
+    insert_image (a_path: STRING)
+
+    on_change: SV_ACTION_SEQUENCE [TUPLE [html: STRING]]
+end
+
+-- Usage
+sv.rich_editor
+    .content ("<p>Hello <b>world</b></p>")
+    .on_change (agent save_draft)
+```
+
+### SV_CHART (Web-based charts via Chart.js)
+```eiffel
+class SV_CHART inherit SV_WEB_VIEW
+feature
+    -- Chart types
+    line (a_data: SV_CHART_DATA): like Current
+    bar (a_data: SV_CHART_DATA): like Current
+    pie (a_data: SV_CHART_DATA): like Current
+    doughnut (a_data: SV_CHART_DATA): like Current
+    radar (a_data: SV_CHART_DATA): like Current
+    polar_area (a_data: SV_CHART_DATA): like Current
+
+    -- Configuration
+    title (a_title: STRING): like Current
+    legend (a_position: STRING): like Current
+    animated: like Current
+    responsive: like Current
+
+    -- Update
+    update_data (a_data: SV_CHART_DATA)
+end
+
+-- Usage
+sv.chart
+    .bar (sales_by_month)
+    .title ("Monthly Sales 2025")
+    .legend ("bottom")
+    .animated
+```
+
+### SV_CODE_EDITOR (Web-based code editor via Monaco/CodeMirror)
+```eiffel
+class SV_CODE_EDITOR inherit SV_WEB_VIEW
+feature
+    content: SV_OBSERVABLE [STRING]
+    language (a_lang: STRING): like Current  -- "eiffel", "python", "javascript", etc.
+
+    theme (a_theme: STRING): like Current  -- "dark", "light"
+    line_numbers: like Current
+    minimap: like Current
+    word_wrap: like Current
+
+    go_to_line (a_line: INTEGER)
+    insert_text (a_text: STRING)
+
+    on_change: SV_ACTION_SEQUENCE [TUPLE [content: STRING]]
+    on_save: SV_ACTION_SEQUENCE [TUPLE [content: STRING]]  -- Ctrl+S
+end
+
+-- Usage
+sv.code_editor
+    .language ("eiffel")
+    .theme ("dark")
+    .line_numbers
+    .content (file_contents)
+    .on_save (agent save_file)
+```
+
+### SV_MARKDOWN_EDITOR (Split-pane markdown)
+```eiffel
+class SV_MARKDOWN_EDITOR inherit SV_WEB_VIEW
+feature
+    content: SV_OBSERVABLE [STRING]
+
+    show_preview: like Current
+    hide_preview: like Current
+    split_vertical: like Current
+    split_horizontal: like Current
+
+    export_html: STRING
+    export_pdf (a_path: STRING)
+end
+```
+
+### SV_DATA_TABLE (Web-based interactive table)
+```eiffel
+class SV_DATA_TABLE inherit SV_WEB_VIEW
+feature
+    -- Like AG-Grid or TanStack Table
+    columns (a_cols: ARRAY [SV_TABLE_COLUMN]): like Current
+    data (a_rows: LIST [JSON_OBJECT]): like Current
+
+    sortable: like Current
+    filterable: like Current
+    paginated (a_page_size: INTEGER): like Current
+    selectable: like Current
+
+    on_row_click: SV_ACTION_SEQUENCE [TUPLE [row: JSON_OBJECT]]
+    on_selection_change: SV_ACTION_SEQUENCE [TUPLE [rows: LIST [JSON_OBJECT]]]
+end
+```
+
+## When to Use Native vs Web
+
+| Use Case | Recommendation |
+|----------|----------------|
+| System menus | Native (SV_MENU) |
+| Toolbars | Native (SV_TOOLBAR) |
+| File dialogs | Native (SV_FILE_DIALOG) |
+| Tree navigation | Native (SV_TREE) |
+| Status bar | Native (SV_STATUS_BAR) |
+| Rich text editing | Web (SV_RICH_EDITOR) |
+| Charts/graphs | Web (SV_CHART) |
+| Code editing | Web (SV_CODE_EDITOR) |
+| Complex forms | Web (HTMX + Alpine) |
+| Dashboards | Web (HTMX + Alpine) |
+| Data tables | Web (SV_DATA_TABLE) |
+| Markdown preview | Web (SV_MARKDOWN_VIEW) |
+
+## The Power of This Approach
+
+1. **Best of both worlds** — Native performance where needed, web richness where desired
+2. **Leverage web ecosystem** — Thousands of JS libraries available
+3. **Eiffel stays in control** — Business logic, data, security in Eiffel
+4. **Rapid UI development** — HTML/CSS faster to iterate than native widgets
+5. **Cross-platform consistency** — Web UI looks the same everywhere
+6. **Progressive enhancement** — Start native, add web components as needed
+
+## Integration with Existing simple_* Libraries
+
+```eiffel
+class MY_HYBRID_APP
+
+feature -- Dependencies
+    htmx: SIMPLE_HTMX           -- Generate HTMX HTML
+    alpine: SIMPLE_ALPINE       -- Alpine.js components
+    json: SIMPLE_JSON           -- Data serialization
+    sql: SIMPLE_SQL             -- Database
+    http: SIMPLE_HTTP           -- API calls
+    markdown: SIMPLE_MARKDOWN   -- Markdown processing
+
+feature -- UI Components
+    native_sidebar: SV_TREE                 -- Native tree
+    web_content: SV_WEB_VIEW                -- Web panel
+    native_toolbar: SV_TOOLBAR              -- Native toolbar
+    native_status_bar: SV_STATUS_BAR        -- Native status
+
+    -- Full hybrid app!
+end
+```
+
+---
+
 ## Research Sources
 
 - [EiffelVision Pick and Drop](https://www.eiffel.org/doc/solutions/EiffelVision_Pick_and_Drop) — Pebbles and holes metaphor
