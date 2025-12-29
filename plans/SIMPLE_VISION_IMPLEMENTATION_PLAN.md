@@ -27,14 +27,44 @@ See `SIMPLE_VISION_INNOVATIONS.md` for the complete innovation stack (13 innovat
 
 Based on proven 5K LOC/day velocity:
 
-| Scope | Sessions | Est. LOC |
-|-------|----------|----------|
-| **MVP (Tier 1 only, Phases 1-6)** | 6 | ~20K |
-| **Full Tier 1 + Innovations** | 9 | ~35K |
-| **Complete (all 3 tiers)** | 12 | ~45K |
-| **With buffer for integration/debugging** | 15 | ~60K |
+### Phase Breakdown
 
-**Conservative estimate: 12-15 sessions** for the complete vision with all 13 innovations, 3 rendering tiers, and polished documentation.
+| Phase | Est. LOC | Sessions |
+|-------|----------|----------|
+| 1. Foundation | ~2,500 | 1 |
+| 2. Core Widgets | ~3,500 | 1 |
+| 3. Advanced Layouts | ~3,500 | 1 |
+| 4. Data Widgets (SV_DATA_GRID is meaty) | ~5,000 | 1 |
+| 5. Dialogs & Polish | ~3,000 | 1 |
+| 6. Styling & Theming | ~2,500 | 1 |
+| 7. C Library Integration (Cairo, stb) | ~4,000 | 1 |
+| 8. Web Panel Integration (webview) | ~5,000 | 1 |
+| 9. Docs & Testing | ~3,000 | 1 |
+| **Subtotal (Phases)** | **~32,000** | **9** |
+
+### Innovations Not Explicitly in Phases
+
+| Innovation | Est. LOC | Sessions |
+|------------|----------|----------|
+| Reactive Binding (SV_OBSERVABLE, SV_BINDING) | ~2,000 | ½ |
+| State Machine (SV_STATE_MACHINE) | ~1,500 | ½ |
+| Form System (SV_FORM, SV_FIELD, validation) | ~3,000 | 1 |
+| Navigation (SV_NAVIGATOR) | ~2,000 | ½ |
+| Constraint System (SV_CONSTRAINTS) | ~2,000 | ½ |
+| **Subtotal (Innovations)** | **~10,500** | **3** |
+
+### Summary
+
+| Scope | Sessions |
+|-------|----------|
+| **MVP (Tier 1 only, Phases 1-6)** | 6 |
+| **Full Tier 1 + Innovations** | 9 |
+| **Complete (all 3 tiers)** | 12 |
+| **With buffer for integration/debugging** | 15 |
+
+**Conservative estimate: 12-15 sessions** for the complete vision with all 13 innovations, 3 tiers, and polished documentation.
+
+That's roughly 40,000-45,000 LOC — a substantial library, but achievable given our velocity.
 
 ---
 
