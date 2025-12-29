@@ -23,6 +23,21 @@ See `SIMPLE_VISION_INNOVATIONS.md` for the complete innovation stack (13 innovat
 
 ---
 
+## Effort Estimate (Ball-Park)
+
+Based on proven 5K LOC/day velocity:
+
+| Scope | Sessions | Est. LOC |
+|-------|----------|----------|
+| **MVP (Tier 1 only, Phases 1-6)** | 6 | ~20K |
+| **Full Tier 1 + Innovations** | 9 | ~35K |
+| **Complete (all 3 tiers)** | 12 | ~45K |
+| **With buffer for integration/debugging** | 15 | ~60K |
+
+**Conservative estimate: 12-15 sessions** for the complete vision with all 13 innovations, 3 rendering tiers, and polished documentation.
+
+---
+
 ## Part 1: EiffelVision-2 Architecture Analysis
 
 ### 1.1 Core Design Patterns
