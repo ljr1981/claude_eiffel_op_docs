@@ -1214,28 +1214,46 @@ sv.button ("Save")
     -- Announces state changes
 ```
 
-## 10.2 Internationalization (i18n)
+## 10.2 Internationalization (i18n) — Uses simple_i18n
+
+**Note:** simple_vision leverages the existing **simple_i18n** library (D:\prod\simple_i18n).
 
 ```eiffel
-class SV_I18N
+-- simple_i18n already provides:
+class SIMPLE_I18N
 feature
-    current_locale: STRING
-    set_locale (a_locale: STRING)
+    -- Translation
+    translate (a_text: STRING): STRING              -- t() alias
+    translate_plural (a_singular, a_plural: STRING; a_count: INTEGER): STRING
 
-    t (a_key: STRING): STRING
-        -- Translate key to current locale
+    -- Locale management
+    current_locale_id: I18N_LOCALE_ID
+    set_locale (a_locale_code: STRING)
 
-    t_plural (a_key: STRING; a_count: INTEGER): STRING
-        -- Pluralization support
+    -- Formatting (locale-aware)
+    format_date (a_date: DATE): STRING
+    format_time (a_time: TIME): STRING
+    format_currency (a_value: REAL_64): STRING
+    format_number (a_value: REAL_64): STRING
 
-    load_translations (a_locale: STRING; a_json_path: STRING)
-
-    on_locale_change: SV_ACTION_SEQUENCE [TUPLE [old_locale, new_locale: STRING]]
+    -- .mo file loading
+    make_from_directory (a_translations_dir: STRING)
 end
 
--- Usage
-sv.text (sv.i18n.t ("welcome_message"))
-sv.text (sv.i18n.t_plural ("items_count", item_count))
+-- Integration with simple_vision:
+sv.text (i18n.translate ("welcome_message"))
+sv.text (i18n.translate_plural ("item", "items", item_count))
+sv.label (i18n.format_currency (product.price))
+```
+
+simple_vision adds locale change notifications for UI refresh:
+
+```eiffel
+SV_I18N_BRIDGE
+feature
+    on_locale_change: SV_ACTION_SEQUENCE [TUPLE [old_locale, new_locale: STRING]]
+        -- Fires when locale changes; widgets can subscribe to refresh
+end
 ```
 
 ## 10.3 Undo/Redo Stack
@@ -1358,20 +1376,21 @@ sv.window ("Editor")
 
 # Summary: The simple_vision Innovation Stack
 
-| Innovation | What It Does | Industry Inspiration |
-|------------|--------------|---------------------|
-| **Reactive Binding** | Auto-update UI when data changes | React, Vue, SwiftUI |
-| **State Machine** | Declarative UI states | XState, Statecharts |
-| **Components** | Reusable, composable pieces | React Components |
-| **Constraints** | Modern layout system | CSS Flexbox, Auto Layout |
-| **Forms** | Complete form handling | React Hook Form, Formik |
-| **Navigation** | Page routing | React Router, Vue Router |
-| **AI Builder** | Generate UI from prompts | Galileo AI, Vercel v0 |
-| **Design Tokens** | Semantic theming | Material Design 3 |
-| **Graphics** | Modern visual effects | CSS3, CoreGraphics |
-| **Accessibility** | Built-in a11y | WCAG guidelines |
-| **i18n** | Internationalization | react-intl |
-| **Virtual Lists** | Performance for large data | react-window |
+| # | Innovation | What It Does | Industry Inspiration |
+|---|------------|--------------|---------------------|
+| 1 | **Reactive Binding** | Auto-update UI when data changes | React, Vue, SwiftUI |
+| 2 | **State Machine** | Declarative UI states | XState, Statecharts |
+| 3 | **Components** | Reusable, composable pieces | React Components |
+| 4 | **Constraints** | Modern layout system | CSS Flexbox, Auto Layout |
+| 5 | **Forms** | Complete form handling | React Hook Form, Formik |
+| 6 | **Navigation** | Page routing | React Router, Vue Router |
+| 7 | **AI Builder** | Generate UI from prompts | Galileo AI, Vercel v0 |
+| 8 | **Design Tokens** | Semantic theming | Material Design 3 |
+| 9 | **Graphics** | Modern visual effects | CSS3, CoreGraphics |
+| 10 | **Extras** | a11y, i18n*, undo, drag-drop, etc. | WCAG, react-intl |
+| 11 | **EV_GRID Enhancement** | Data grids with lazy loading, virtual scrolling, 1M+ rows | AG Grid, TanStack Table |
+
+*i18n via existing simple_i18n library
 
 ---
 
@@ -1385,6 +1404,402 @@ sv.window ("Editor")
 - [Galileo AI - UI Generation](https://www.usegalileo.ai/)
 - [Vercel AI SDK - Generative UI](https://ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces)
 - [Design Token System](https://www.contentful.com/blog/design-token-system/)
+
+---
+
+# INNOVATION 11: EV_GRID Deep Enhancement (SV_DATA_GRID)
+
+## The Hidden Power of EV_GRID
+
+EV_GRID is one of EV2's most sophisticated widgets — a combined tree/list/table with **60+ related classes**. Most developers only scratch the surface. simple_vision exposes its full power through a simplified API.
+
+## EV_GRID's Native Capabilities (Often Unknown)
+
+### 1. Lazy Loading / Dynamic Content
+EV_GRID has **built-in lazy loading** via `dynamic_content_function`:
+
+```eiffel
+-- EV2 Native (Verbose)
+my_grid.set_dynamic_content_function (agent create_item_on_demand)
+my_grid.enable_partial_dynamic_content
+my_grid.set_row_count_to (1_000_000)  -- Supports millions of virtual rows!
+
+create_item_on_demand (a_column, a_row: INTEGER): EV_GRID_ITEM
+    do
+        -- Only called when row becomes visible
+        create {EV_GRID_LABEL_ITEM} Result.make_with_text (fetch_data (a_row))
+    end
+```
+
+**This means:** You can have a grid with 1 million rows and only the visible ~20 are actually created!
+
+### 2. Virtual Positioning
+```eiffel
+-- Virtual coordinates (total scrollable area)
+virtual_x_position, virtual_y_position
+maximum_virtual_x_position, maximum_virtual_y_position
+virtual_width, virtual_height
+
+-- Viewport (visible window into virtual space)
+viewable_width, viewable_height
+viewable_x_offset, viewable_y_offset
+
+-- Navigation
+row_at_virtual_position (y_coord)
+column_at_virtual_position (x_coord)
+first_visible_row, last_visible_row
+visible_row_indexes, visible_column_indexes
+```
+
+### 3. Rich Item Types
+
+| EV2 Class | Purpose |
+|-----------|---------|
+| EV_GRID_LABEL_ITEM | Text with optional pixmap |
+| EV_GRID_EDITABLE_ITEM | In-place text editing |
+| EV_GRID_CHECKBOX_LABEL_ITEM | Checkbox + text |
+| EV_GRID_CHOICE_ITEM | Dropdown selection |
+| EV_GRID_COMBO_ITEM | Editable dropdown |
+| EV_GRID_DRAWABLE_ITEM | Custom drawing |
+| EV_GRID_LABEL_ELLIPSIS_ITEM | Truncated text with "..." |
+| EV_GRID_PIXMAPS_ON_RIGHT_LABEL_ITEM | Icons on right side |
+
+### 4. Tree Mode
+```eiffel
+my_grid.enable_tree
+-- Now rows can have parent/child relationships
+my_grid.insert_new_row_parented (parent_row)
+-- With expand/collapse, connectors, indentation
+```
+
+### 5. Performance Optimization
+```eiffel
+-- Batch updates (critical for large changes)
+my_grid.lock_update
+-- ... make many changes ...
+my_grid.unlock_update
+
+-- Fixed row height (faster rendering)
+my_grid.enable_row_height_fixed
+my_grid.set_row_height (24)
+
+-- Scrolling modes
+my_grid.enable_vertical_scrolling_per_item  -- Snap to rows
+```
+
+### 6. Overlay Drawing (Custom Rendering)
+```eiffel
+-- Draw BEFORE item content
+item.set_pre_draw_overlay_function (agent draw_background)
+
+-- Draw AFTER item content
+item.set_post_draw_overlay_function (agent draw_border)
+```
+
+### 7. Locked Rows/Columns
+```eiffel
+-- Header rows/columns that don't scroll
+my_grid.locked_rows
+my_grid.locked_columns
+```
+
+## The Problem: EV_GRID is Powerful but Complex
+
+- 60+ classes to understand
+- Verbose API for common operations
+- Easy to miss performance optimizations
+- Dynamic content setup is non-obvious
+
+## The Solution: SV_DATA_GRID
+
+### Simplified Lazy Loading
+
+```eiffel
+class SV_DATA_GRID [G]
+    -- G is the row data type
+
+feature -- Data Source
+    set_items (a_items: LIST [G])
+        -- Eagerly load all items (for small datasets)
+
+    set_lazy_items (a_count: INTEGER; a_fetcher: FUNCTION [INTEGER, G])
+        -- Lazy load: only fetch visible rows
+        -- a_fetcher called with row index, returns item data
+
+    set_data_source (a_source: SV_DATA_SOURCE [G])
+        -- Full reactive: auto-updates when source changes
+
+feature -- Columns
+    add_column (a_title: STRING; a_accessor: FUNCTION [G, ANY]): SV_GRID_COLUMN_BUILDER
+        -- Fluent column definition
+
+feature -- Paging
+    set_page_size (a_size: INTEGER)
+    set_total_count (a_count: INTEGER)
+    on_page_change: SV_ACTION_SEQUENCE [TUPLE [page: INTEGER]]
+```
+
+### Fluent Column Definitions
+
+```eiffel
+sv.data_grid [USER]
+    .add_column ("Name", agent {USER}.name)
+        .width (200)
+        .sortable
+        .searchable
+    .add_column ("Email", agent {USER}.email)
+        .width (250)
+        .sortable
+    .add_column ("Role", agent {USER}.role)
+        .width (100)
+        .editable_dropdown (role_options)
+    .add_column ("Active", agent {USER}.is_active)
+        .width (80)
+        .checkbox
+    .add_column ("Actions", agent action_cell)
+        .width (120)
+        .custom_renderer (agent render_action_buttons)
+```
+
+### Virtual Scrolling (Millions of Rows)
+
+```eiffel
+sv.data_grid [LOG_ENTRY]
+    .virtual_mode (1_000_000)  -- 1 million rows
+    .fetch_page (agent (a_start, a_count: INTEGER): LIST [LOG_ENTRY]
+        do
+            Result := database.query_logs (a_start, a_count)
+        end)
+    .row_height (24)  -- Fixed for performance
+```
+
+### Tree Mode Made Easy
+
+```eiffel
+sv.tree_grid [FOLDER]
+    .children_accessor (agent {FOLDER}.subfolders)
+    .is_expandable (agent {FOLDER}.has_subfolders)
+    .on_expand (agent load_children)
+```
+
+### Built-in Features
+
+```eiffel
+sv.data_grid [PRODUCT]
+    .columns (product_columns)
+
+    -- Sorting
+    .sortable
+    .default_sort ("name", ascending)
+    .on_sort (agent handle_sort)
+
+    -- Filtering
+    .filterable
+    .search_columns (<<"name", "sku", "description">>)
+    .on_filter (agent handle_filter)
+
+    -- Selection
+    .selection_mode (sv.selection.multiple_rows)
+    .on_select (agent handle_selection)
+    .on_double_click (agent edit_product)
+
+    -- Editing
+    .editable
+    .on_cell_edit (agent save_change)
+
+    -- Context menu
+    .row_context_menu (<<
+        sv.menu_item ("Edit").on_click (agent edit_selected),
+        sv.menu_item ("Delete").on_click (agent delete_selected),
+        sv.menu_separator,
+        sv.menu_item ("Export...").on_click (agent export_selected)
+    >>)
+
+    -- Performance
+    .lock_during_updates
+    .fixed_row_height (24)
+```
+
+### Server-Side Processing
+
+For truly large datasets, push sorting/filtering to the server:
+
+```eiffel
+sv.data_grid [ORDER]
+    .server_mode
+    .on_request (agent (a_request: SV_GRID_REQUEST): SV_GRID_RESPONSE
+        do
+            -- a_request contains: page, page_size, sort_column, sort_dir, filters
+            Result := api.fetch_orders (a_request.as_query_params)
+        end)
+```
+
+### Cell Renderers
+
+Custom rendering for special cells:
+
+```eiffel
+class SV_CELL_RENDERERS
+feature
+    -- Built-in renderers
+    text: SV_TEXT_RENDERER
+    checkbox: SV_CHECKBOX_RENDERER
+    dropdown: SV_DROPDOWN_RENDERER
+    progress_bar: SV_PROGRESS_RENDERER
+    sparkline: SV_SPARKLINE_RENDERER
+    avatar: SV_AVATAR_RENDERER
+    badge: SV_BADGE_RENDERER
+    rating: SV_RATING_RENDERER
+    action_buttons: SV_ACTION_BUTTONS_RENDERER
+end
+
+-- Usage
+.add_column ("Progress", agent {TASK}.percent_complete)
+    .renderer (sv.renderers.progress_bar)
+
+.add_column ("Status", agent {ORDER}.status)
+    .renderer (sv.renderers.badge
+        .color_map (<<
+            ["pending", sv.colors.warning],
+            ["shipped", sv.colors.info],
+            ["delivered", sv.colors.success]
+        >>))
+```
+
+### Inline Editing Types
+
+```eiffel
+class SV_CELL_EDITORS
+feature
+    text: SV_TEXT_EDITOR
+    number: SV_NUMBER_EDITOR
+    date: SV_DATE_EDITOR
+    dropdown: SV_DROPDOWN_EDITOR
+    checkbox: SV_CHECKBOX_EDITOR
+    color_picker: SV_COLOR_EDITOR
+    autocomplete: SV_AUTOCOMPLETE_EDITOR
+end
+
+.add_column ("Category", agent {PRODUCT}.category)
+    .editor (sv.editors.autocomplete
+        .suggestions (agent category_suggestions))
+```
+
+### Export Capabilities
+
+```eiffel
+sv.data_grid
+    .exportable
+    .export_formats (<<sv.export.csv, sv.export.excel, sv.export.json>>)
+    .export_button  -- Adds export button to toolbar
+
+-- Programmatic
+my_grid.export_to_csv ("products.csv")
+my_grid.export_to_json ("products.json")
+```
+
+## Complete Example: Product Management Grid
+
+```eiffel
+feature -- UI
+    create_product_grid: SV_DATA_GRID [PRODUCT]
+        do
+            Result := sv.data_grid [PRODUCT]
+                -- Data source (reactive)
+                .bind (product_repository)
+
+                -- Columns
+                .add_column ("", agent {PRODUCT}.image_url)
+                    .width (50)
+                    .renderer (sv.renderers.avatar.size (32))
+                .add_column ("Name", agent {PRODUCT}.name)
+                    .width (200)
+                    .sortable
+                    .searchable
+                    .editable
+                .add_column ("SKU", agent {PRODUCT}.sku)
+                    .width (100)
+                    .sortable
+                .add_column ("Price", agent {PRODUCT}.price)
+                    .width (100)
+                    .sortable
+                    .format ("$%.2f")
+                    .editable
+                    .editor (sv.editors.number.min (0))
+                .add_column ("Stock", agent {PRODUCT}.stock_count)
+                    .width (80)
+                    .sortable
+                    .renderer (agent stock_renderer)
+                .add_column ("Status", agent {PRODUCT}.status)
+                    .width (100)
+                    .renderer (sv.renderers.badge.color_map (status_colors))
+                    .editable
+                    .editor (sv.editors.dropdown.options (status_options))
+                .add_column ("Actions", Void)
+                    .width (120)
+                    .renderer (sv.renderers.action_buttons (<<
+                        sv.action ("Edit").icon (sv.icons.edit).on_click (agent edit_product),
+                        sv.action ("Delete").icon (sv.icons.delete).on_click (agent delete_product)
+                    >>))
+
+                -- Features
+                .sortable
+                .filterable
+                .selection_mode (sv.selection.multiple_rows)
+                .row_height (48)
+                .header_height (40)
+                .alternating_row_colors
+                .row_hover_highlight
+
+                -- Toolbar
+                .toolbar (<<
+                    sv.button ("Add Product").primary.on_click (agent add_product),
+                    sv.spacer,
+                    sv.search_field.placeholder ("Search products..."),
+                    sv.button ("Export").on_click (agent export_products)
+                >>)
+
+                -- Pagination
+                .pagination (25)
+                .pagination_position (bottom)
+
+                -- Events
+                .on_double_click (agent edit_product)
+                .on_selection_change (agent update_toolbar_state)
+
+                .build
+        end
+
+    stock_renderer (a_stock: INTEGER): SV_WIDGET
+        do
+            if a_stock = 0 then
+                Result := sv.badge ("Out of Stock").color (sv.colors.error)
+            elseif a_stock < 10 then
+                Result := sv.badge ("Low: " + a_stock.out).color (sv.colors.warning)
+            else
+                Result := sv.text (a_stock.out)
+            end
+        end
+```
+
+## EV_GRID vs SV_DATA_GRID Comparison
+
+| Task | EV_GRID (Lines) | SV_DATA_GRID (Lines) |
+|------|----------------|---------------------|
+| Basic table with 5 columns | ~50 | ~15 |
+| Lazy loading setup | ~30 | ~5 |
+| Sortable columns | ~40 | ~5 |
+| Inline editing | ~60 | ~10 |
+| Full-featured product grid | ~300 | ~50 |
+
+## Implementation Notes
+
+SV_DATA_GRID wraps EV_GRID and uses:
+- `dynamic_content_function` for lazy loading
+- `lock_update/unlock_update` for batch operations
+- `enable_row_height_fixed` for performance
+- Item type selection based on column config
+- Automatic EV_GRID_LABEL_ITEM, EV_GRID_EDITABLE_ITEM, EV_GRID_CHECKABLE_LABEL_ITEM creation
 
 ---
 
