@@ -1627,187 +1627,174 @@ feature -- UI
 end
 ```
 
-## SV_* Wrapper Classes for Ecosystem Integration
+## How simple_vision Uses the Ecosystem
 
-Each simple_* library gets an SV_* wrapper that provides GUI-friendly integration:
+simple_vision classes USE simple_* libraries internally — no unnecessary wrapper layers.
 
-### Data Source Wrappers
-
-| simple_* Library | SV_* Class | Purpose |
-|------------------|------------|---------|
-| simple_sql | `SV_SQL_DATA_SOURCE [G]` | Reactive SQL queries, auto-refresh on change |
-| simple_http | `SV_REST_DATA_SOURCE [G]` | REST API binding with pagination, caching |
-| simple_websocket | `SV_REALTIME_DATA_SOURCE [G]` | Live data streaming to grids/lists |
-| simple_json | `SV_JSON_DATA_SOURCE [G]` | JSON file as reactive data store |
-| simple_xml | `SV_XML_DATA_SOURCE [G]` | XML file binding |
-| simple_yaml | `SV_YAML_DATA_SOURCE [G]` | YAML config as data source |
-| simple_csv | `SV_CSV_DATA_SOURCE [G]` | CSV import/export with grid binding |
-
-### UI Utility Wrappers
-
-| simple_* Library | SV_* Class | Purpose |
-|------------------|------------|---------|
-| simple_i18n | `SV_I18N_BRIDGE` | Locale change events, widget refresh |
-| simple_clipboard | `SV_CLIPBOARD` | Widget-aware cut/copy/paste actions |
-| simple_pdf | `SV_PDF_EXPORTER` | Export widgets, grids, forms to PDF |
-| simple_validation | `SV_VALIDATOR` | Rule-based field validation with UI feedback |
-| simple_config | `SV_SETTINGS` | Persistent app settings with change notification |
-| simple_logger | `SV_DEBUG_CONSOLE` | Visual log viewer widget |
-| simple_uuid | `SV_ID_GENERATOR` | Unique IDs for widget tracking |
-| simple_datetime | `SV_DATE_PICKER`, `SV_TIME_PICKER`, `SV_CALENDAR` | Date/time input widgets |
-| simple_regex | `SV_PATTERN_VALIDATOR` | Regex-based input validation |
-| simple_template | `SV_TEMPLATE_TEXT` | Dynamic text labels with variable substitution |
-| simple_markdown | `SV_MARKDOWN_VIEW` | Rendered markdown display widget |
-| simple_watcher | `SV_FILE_WATCHER` | Auto-reload UI when files change |
-| simple_encryption | `SV_SECURE_FIELD` | Encrypted credential storage |
-| simple_cache | `SV_CACHED_DATA_SOURCE [G]` | Caching layer for any data source |
-
-### AI/Media Wrappers
-
-| simple_* Library | SV_* Class | Purpose |
-|------------------|------------|---------|
-| simple_ai_client | `SV_AI_BUILDER`, `SV_CLAUDE_PROVIDER`, `SV_GPT_PROVIDER`, `SV_OLLAMA_PROVIDER` | AI-powered UI generation |
-| simple_ffmpeg | `SV_VIDEO_PLAYER`, `SV_VIDEO_THUMBNAIL` | Video playback widget, thumbnails |
-| simple_audio | `SV_AUDIO_PLAYER`, `SV_SOUND_EFFECT` | Audio playback, notification sounds |
-
-### Example: SV_DATE_PICKER using simple_datetime
+### Design Principle: Direct Use, Not Wrapping
 
 ```eiffel
-class SV_DATE_PICKER
-    -- Wraps simple_datetime for visual date selection
+-- WRONG: Unnecessary wrapper
+class SV_CLIPBOARD  -- Don't do this
+    clipboard: SIMPLE_CLIPBOARD
+    copy (s: STRING) do clipboard.copy_text (s) end  -- Pointless indirection
 
-inherit
-    SV_WIDGET
+-- RIGHT: Direct use inside widgets
+class SV_TEXT_FIELD inherit SV_WIDGET
+feature {NONE}
+    clipboard: SIMPLE_CLIPBOARD  -- Used internally, not exposed
+feature
+    copy_selection do clipboard.copy_text (selected_text) end
+```
 
-feature -- Access
+### SV_DATA_SOURCE Implementations (Add Value: Reactive Binding)
+
+These ARE new classes because they implement the `SV_DATA_SOURCE [G]` contract, adding reactive binding on top of simple_* libraries:
+
+| Implementation | Uses Internally | Added Value |
+|----------------|-----------------|-------------|
+| `SV_SQL_DATA_SOURCE [G]` | simple_sql | Reactive queries, auto-refresh on DB change |
+| `SV_REST_DATA_SOURCE [G]` | simple_http | Pagination, caching, reactive updates |
+| `SV_REALTIME_DATA_SOURCE [G]` | simple_websocket | Live streaming to UI |
+| `SV_FILE_DATA_SOURCE [G]` | simple_json/yaml/xml | File-backed reactive store |
+| `SV_CSV_DATA_SOURCE [G]` | simple_csv | CSV with reactive binding |
+
+```eiffel
+deferred class SV_DATA_SOURCE [G]
+    -- Abstract contract — the interface simple_vision widgets bind to
+
+class SV_SQL_DATA_SOURCE [G] inherit SV_DATA_SOURCE [G]
+    -- Implementation that uses simple_sql internally
+feature {NONE}
+    db: SIMPLE_SQL  -- Internal dependency, not exposed
+feature
+    -- Implements SV_DATA_SOURCE contract
+    get_all: LIST [G] do ... end
+    on_change: SV_ACTION_SEQUENCE [TUPLE [G]]  -- Reactive!
+```
+
+### Widgets That Use simple_* Internally
+
+These are first-class SV_* widgets that happen to use simple_* libraries for their implementation:
+
+| Widget | Uses Internally | Purpose |
+|--------|-----------------|---------|
+| `SV_DATE_PICKER` | simple_datetime | Date selection with formatting |
+| `SV_MARKDOWN_VIEW` | simple_markdown | Rendered markdown display |
+| `SV_VIDEO_PLAYER` | simple_ffmpeg | Video playback |
+| `SV_AUDIO_PLAYER` | simple_audio | Audio playback |
+
+```eiffel
+class SV_DATE_PICKER inherit SV_WIDGET
+    -- A date picker widget (not a wrapper!)
+
+feature {NONE} -- Internal dependencies
+    date_helper: SIMPLE_DATETIME  -- Used internally for formatting
+
+feature -- Widget API
     value: SV_OBSERVABLE [DATE]
-        -- Selected date (reactive)
-
-    simple_date: SIMPLE_DATE
-        -- Underlying simple_datetime object
-
-feature -- Configuration
     min_date (a_date: DATE): like Current
     max_date (a_date: DATE): like Current
-    format (a_format: STRING): like Current  -- e.g., "MM/DD/YYYY"
-    locale (a_locale: STRING): like Current  -- Uses simple_i18n
-
-feature -- Events
-    on_change: SV_ACTION_SEQUENCE [TUPLE [old_date, new_date: DATE]]
+    format (a_format: STRING): like Current
 end
 
--- Usage
+-- Usage: user sees a widget, not simple_datetime
 sv.date_picker
     .format ("YYYY-MM-DD")
-    .min_date (today)
     .bind (due_date_observable)
 ```
 
-### Example: SV_MARKDOWN_VIEW using simple_markdown
+### SV_* Family Conveniences (Discoverability)
+
+For **family cohesion**, utility classes live in the SV_* namespace. Users look in one place — the SV_* family — and find everything they need. These aren't wrappers; they're **convenient entry points** that expose the underlying simple_* functionality:
+
+| SV_* Class | Exposes | Why in SV_* Family |
+|------------|---------|-------------------|
+| `SV_CLIPBOARD` | simple_clipboard | Clipboard ops from SV_* namespace |
+| `SV_I18N` | simple_i18n | Translations accessible via `sv.i18n` |
+| `SV_PDF` | simple_pdf | PDF export via `sv.pdf` |
+| `SV_CONFIG` | simple_config | Settings via `sv.config` |
+| `SV_LOG` | simple_logger | Logging via `sv.log` |
+| `SV_VALIDATE` | simple_validation | Validation via `sv.validate` |
 
 ```eiffel
-class SV_MARKDOWN_VIEW
-    -- Renders markdown content using simple_markdown
-
-inherit
-    SV_WIDGET
-
-feature -- Content
-    set_markdown (a_md: STRING)
-        -- Parse and render markdown
-
-    set_markdown_file (a_path: STRING)
-        -- Load and render from file
-
-feature -- Configuration
-    enable_syntax_highlighting
-    disable_syntax_highlighting
-    set_code_theme (a_theme: STRING)  -- "dark", "light", "github"
-    enable_link_clicking
-    on_link_click: SV_ACTION_SEQUENCE [TUPLE [url: STRING]]
+-- Family cohesion: everything accessible via sv.*
+class SV_QUICK
+feature -- Utilities (family members)
+    clipboard: SV_CLIPBOARD once create Result end
+    i18n: SV_I18N once create Result end
+    pdf: SV_PDF once create Result end
+    config: SV_CONFIG once create Result end
+    log: SV_LOG once create Result end
+    validate: SV_VALIDATE once create Result end
 end
 
--- Usage
-sv.markdown_view
-    .set_markdown ("# Hello World%NThis is **bold** text.")
-    .enable_syntax_highlighting
-    .on_link_click (agent open_url)
+-- Usage: one namespace, no confusion
+sv.clipboard.copy ("text")
+sv.i18n.translate ("hello")
+sv.pdf.export (my_grid, "report.pdf")
+sv.log.info ("User logged in")
+sv.validate.email (email_field.text)
 ```
 
-### Example: SV_VIDEO_PLAYER using simple_ffmpeg
+### SV_* Convenience Classes (Not Wrappers)
+
+These aren't wrappers — they're the simple_* classes **re-homed** into the SV_* family:
 
 ```eiffel
-class SV_VIDEO_PLAYER
-    -- Video playback widget using simple_ffmpeg
-
+class SV_CLIPBOARD
+    -- Not a wrapper! Just inherits and lives in SV_* namespace
 inherit
-    SV_WIDGET
-
-feature -- Playback
-    load (a_path: STRING)
-    play
-    pause
-    stop
-    seek (a_seconds: REAL_64)
-
-feature -- Status
-    is_playing: BOOLEAN
-    duration: REAL_64
-    current_position: REAL_64
-
-feature -- Configuration
-    show_controls: like Current
-    hide_controls: like Current
-    autoplay: like Current
-    loop: like Current
-    muted: like Current
-    volume (a_percent: REAL): like Current  -- 0.0 to 1.0
-
-feature -- Events
-    on_play: SV_ACTION_SEQUENCE [TUPLE]
-    on_pause: SV_ACTION_SEQUENCE [TUPLE]
-    on_end: SV_ACTION_SEQUENCE [TUPLE]
-    on_progress: SV_ACTION_SEQUENCE [TUPLE [position: REAL_64]]
+    SIMPLE_CLIPBOARD
+        rename
+            copy_text as copy,
+            paste as paste_text
+        end
 end
 
--- Usage
-sv.video_player
-    .load ("intro.mp4")
-    .show_controls
-    .volume (0.8)
-    .on_end (agent play_next_video)
+-- Or even simpler — just an alias:
+class SV_CLIPBOARD = SIMPLE_CLIPBOARD
+```
+
+The point isn't to add indirection — it's **discoverability**:
+
+```eiffel
+-- User thinks: "I need clipboard in my SV app"
+-- User looks: SV_* classes
+-- User finds: SV_CLIPBOARD
+-- Done. No hunting through multiple namespaces.
 ```
 
 ## Dependency Graph
 
 ```
-                    ┌─────────────────┐
-                    │  simple_vision  │
-                    │    (SV_*)       │
-                    └────────┬────────┘
-                             │
-        ┌────────────────────┼────────────────────┐
-        │                    │                    │
-        ▼                    ▼                    ▼
-┌───────────────┐    ┌───────────────┐    ┌───────────────┐
-│ Data Sources  │    │   UI Utils    │    │   AI/Media    │
-│  SV_*_SOURCE  │    │    SV_*       │    │    SV_*       │
-├───────────────┤    ├───────────────┤    ├───────────────┤
-│ simple_sql    │    │ simple_i18n   │    │ simple_ai     │
-│ simple_http   │    │ simple_clip   │    │ simple_ffmpeg │
-│ simple_ws     │    │ simple_pdf    │    │ simple_audio  │
-│ simple_json   │    │ simple_valid  │    └───────────────┘
-│ simple_xml    │    │ simple_config │
-│ simple_yaml   │    │ simple_logger │
-│ simple_csv    │    │ simple_uuid   │
-└───────────────┘    │ simple_regex  │
-                     │ simple_datetime│
-                     │ simple_template│
-                     │ simple_markdown│
-                     │ simple_watcher │
-                     │ simple_encrypt │
-                     │ simple_cache   │
-                     └───────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                      simple_vision (SV_*)                       │
+│                                                                 │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────┐ │
+│  │ SV_DATA_    │  │ SV_WIDGET   │  │ SV_* Family Conveniences│ │
+│  │ SOURCE [G]  │  │ classes     │  │ (discoverability)       │ │
+│  │ impls       │  │             │  │                         │ │
+│  ├─────────────┤  ├─────────────┤  ├─────────────────────────┤ │
+│  │ uses:       │  │ uses:       │  │ re-homes:               │ │
+│  │ simple_sql  │  │ simple_     │  │ SV_CLIPBOARD            │ │
+│  │ simple_http │  │   datetime  │  │ SV_I18N                 │ │
+│  │ simple_ws   │  │ simple_     │  │ SV_PDF                  │ │
+│  │ simple_json │  │   markdown  │  │ SV_CONFIG               │ │
+│  │ simple_csv  │  │ simple_     │  │ SV_LOG                  │ │
+│  └─────────────┘  │   ffmpeg    │  │ SV_VALIDATE             │ │
+│                   │ simple_audio│  └─────────────────────────┘ │
+│                   └─────────────┘                               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    simple_* ecosystem                           │
+│  simple_sql, simple_http, simple_websocket, simple_json,        │
+│  simple_datetime, simple_markdown, simple_ffmpeg, simple_audio, │
+│  simple_clipboard, simple_i18n, simple_pdf, simple_config,      │
+│  simple_logger, simple_validation, ...                          │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ---
