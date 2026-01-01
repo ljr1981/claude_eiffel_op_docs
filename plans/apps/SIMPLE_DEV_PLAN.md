@@ -596,6 +596,389 @@ The excitement around this project is palpable – **"we are DOING THIS!!!"**[^5
 
 ---
 
+## Implementation Roadmap (Phase 2+)
+
+The following phases build on the Phase 1 foundation (CLI REPL, project CRUD, basic ask command, database schema).
+
+### Phase 2: Mode System & Context Memory
+
+**Goal:** Mode-aware CLI that locks focus and prevents straying
+
+**Deliverables:**
+- **Mode Manager** (`DEV_MODE_MANAGER`): Tracks current mode per project (spec, design, impl, test)
+- **Mode-aware prompt**: `dev:myproj:spec>` format showing project and active mode
+- **Mode guards**: Pre-hooks that enforce allowed/blocked commands per mode
+- **Context Builder** (`DEV_CONTEXT_BUILDER`): Assembles relevant context for AI calls
+- **Session handoffs**: Persist state for context continuity
+- **FTS5 search**: Full-text search on conversations and decisions
+- **Cost tracking**: Log token usage and costs per session
+
+**Database tables:** `modes`, `project_mode_state`, `session_handoffs`
+
+**Commands:**
+- `mode <name>` - Enter a mode
+- `mode` - Show current mode and allowed commands
+- `exit` - Leave current mode
+- `context` - Show what would be sent to AI
+- `cost` - Show AI usage summary
+
+### Phase 3: Hook System (Eiffel-First, AI-Minimal)
+
+**Goal:** Deterministic pre/post command processing with minimal AI touchpoints
+
+**Philosophy:** Hooks are Eiffel code that runs automatically. AI is only invoked for creative/analytical tasks that cannot be done deterministically.
+
+**Pre-Hooks (Eiffel code):**
+| Hook | Purpose | Implementation |
+|------|---------|----------------|
+| `mode_guard` | Check command allowed in mode | `DEV_MODE_MANAGER` |
+| `phase_guard` | Check project phase | `DEV_PROJECT_MANAGER` |
+| `context_loader` | Load relevant spec/design | `DEV_CONTEXT_BUILDER` |
+| `input_sanitizer` | Security scan input | `DEV_SECURITY` |
+
+**Post-Hooks (mix of Eiffel and AI):**
+| Hook | Purpose | AI Needed? |
+|------|---------|------------|
+| `naming_validator` | Check Eiffel naming conventions | No (Eiffel) |
+| `contract_checker` | Flag missing contracts | No (Eiffel) |
+| `hats_review` | Apply working hats after code gen | Yes (AI) |
+| `decision_extractor` | Extract decisions from AI response | Yes (AI) |
+| `cost_logger` | Track token usage | No (Eiffel) |
+
+**Database tables:** `hooks`, `hook_config`
+
+**Deliverables:**
+- `DEV_HOOK_MANAGER`: Orchestrates hook execution
+- `DEV_NAMING_VALIDATOR`: Eiffel naming convention checks
+- `DEV_CONTRACT_CHECKER`: Detect missing pre/post/invariants
+- User hook configuration (enable/disable per project)
+
+### Phase 4: Knowledge Architecture
+
+**Goal:** Parse reference docs into structured knowledge for context injection; enable project ingestion and dogfooding
+
+**Reference docs to parse:**
+| Document | Category | Content |
+|----------|----------|---------|
+| `HATS.md` | hat | Working hat definitions |
+| `contract_patterns.md` | contract_pattern | DBC patterns |
+| `verification_process.md` | verification_step | Meyer's verify loop |
+| `EIFFEL_MENTAL_MODEL.md` | mental_model | Core concepts |
+| `simple_library_design_process.md` | design_process | 7-step process |
+| `mentoring_mode.md` | mentoring | Teaching patterns |
+| `ec_introspection_howto.md` | introspection | Compiler techniques |
+| `compaction_instructions.md` | compaction | Context compression |
+
+**Database tables:** `knowledge_items` (with FTS5), `eiffel_terms`, `error_prefixes`, `pattern_keywords`, `project_ingestion`
+
+**Key Architectural Decisions (from Phase 3 discussions):**
+
+1. **No Hardcoded Triggers** - Error prefixes, pattern keywords, and Eiffel terminology must be stored in kb.db, not in code. This allows updates without recompilation.
+
+2. **DEV_KNOWLEDGE_CACHE Singleton** - Use Eiffel's `once ("PROCESS")` pattern to load all reference data at startup into memory. Subsequent queries hit the cache, not the database.
+   ```eiffel
+   class DEV_KNOWLEDGE_CACHE
+   feature
+       instance: DEV_KNOWLEDGE_CACHE
+           once ("PROCESS") create Result.make_from_db end
+       eiffel_terms: HASH_TABLE [EIFFEL_TERM, STRING]
+       error_prefixes: ARRAYED_LIST [STRING]
+       is_eiffel_term (a_word: STRING): BOOLEAN
+   ```
+
+3. **Eiffel Terminology in kb.db** - Store term mappings:
+   - `feature` (aliases: method, function, routine)
+   - `command` (aliases: procedure, setter, void routine)
+   - `query` (aliases: getter, accessor, function)
+   - Source: Eiffel.org glossary
+
+4. **JSON Content for Flexibility** - Knowledge items use JSON content blobs for easy updates:
+   ```json
+   {"category": "eiffel_terminology", "name": "feature_terms",
+    "content": {"feature": {"aliases": ["method"], "description": "..."}},
+    "triggers": ["feature", "method", "function"]}
+   ```
+
+5. **Project Ingestion** - Leverage simple_kb's ECF parsing to ingest existing Eiffel projects:
+   - `project ingest <path/to/project.ecf>` - Ingest classes, features, contracts into kb.db
+   - `project refresh` - Re-ingest when project changes
+   - `project sync` - Check if files changed since last ingestion
+   - Track ingestion state in `project_ingestion` table
+
+6. **Reverse Engineering Support** - When opening a project with code but no specs:
+   - Detect missing specs/plans folders
+   - Offer to generate specs from existing code
+   - Use ingested class/feature data to populate initial spec
+
+7. **Dogfooding** - simple_dev must be able to ingest and develop itself:
+   ```
+   dev open D:/prod/simple_dev
+   > Ingesting simple_dev.ecf...
+   > ask "How does the spec workflow work?"
+   > [RAG injects context from DEV_CLI, DEV_SPECIFICATION, DEV_SPEC_REPO]
+   ```
+
+**Deliverables:**
+- `DEV_KNOWLEDGE_PARSER`: Parse markdown docs into knowledge_items
+- `DEV_KNOWLEDGE_INJECTOR`: Select relevant knowledge for AI context
+- `DEV_KNOWLEDGE_CACHE`: Singleton cache loaded at startup
+- `DEV_PROJECT_INGESTOR`: Wrapper around simple_kb ingestion
+- `project ingest <ecf>`: Ingest Eiffel project command
+- `project refresh`: Re-ingest current project
+- `project status`: Show ingestion state
+- Trigger-based activation (patterns in kb.db, not hardcoded)
+- Eiffel terminology table from Eiffel.org glossary
+
+### Phase 5: Specification Workflow
+
+**Goal:** Multi-turn ideation dialog with AI for requirements gathering
+
+**Commands:**
+- `spec new` - Start ideation (multi-turn with AI)
+- `spec edit` - Modify current specification
+- `spec view` - Display specification
+- `spec approve` - Lock spec, transition to design phase
+
+**AI Integration:**
+- AI prompts for clarification (users, constraints, success criteria)
+- Structured output parsing for spec elements
+- Versioning when spec changes
+
+### Phase 6: Design Workflow
+
+**Goal:** AI-assisted architecture and component design
+
+**Commands:**
+- `design new` - AI-assisted design session
+- `design component <name>` - Add/detail component
+- `design pattern <name>` - Apply design pattern
+- `design review` - AI review of design
+- `design approve` - Lock design, transition to tasks
+
+**AI Integration:**
+- Component responsibility assignment
+- Design pattern suggestions
+- Class diagram generation (Mermaid/ASCII)
+
+### Phase 7: Build Integration
+
+**Goal:** Automated compile/test with error capture
+
+**Commands:**
+- `build [target]` - Run ec.exe, capture output
+- `test [target]` - Run tests, parse results
+- `check` - Run assertions/contracts check
+
+**Deliverables:**
+- `DEV_COMPILER`: ec.exe wrapper with output capture
+- `DEV_TEST_RUNNER`: Test execution and parsing
+- Error-to-AI feedback loop (feed errors to AI for fix suggestions)
+- Build/test history logging
+
+### Phase 8: TUI Application (Optional)
+
+**Goal:** Full TUI interface with simple_tui
+
+**Deliverables:**
+- `DEV_APPLICATION`: TUI application class
+- `DEV_MAIN_VIEW`: Main screen with status
+- `DEV_SPEC_DIALOG`: Specification editing
+- `DEV_DESIGN_DIALOG`: Design editing
+- `DEV_TASK_DIALOG`: Task management
+- Keyboard shortcuts for rapid navigation
+
+---
+
+## AI Boxing Strategy
+
+A key design principle is **Eiffel-First, AI-Minimal**: maximize deterministic Eiffel code, minimize AI touchpoints.
+
+### Where AI is Required (Creative/Analytical)
+- Specification ideation (exploring problem space)
+- Design brainstorming (architectural creativity)
+- Contract suggestions (semantic understanding)
+- Code review (pattern recognition beyond rules)
+- Spec-match verification (semantic comparison)
+
+### Where AI is NOT Required (Deterministic)
+- Mode guards (command allowed in mode)
+- Naming convention checks (regex patterns)
+- Security scanning (known patterns)
+- Cost tracking (simple arithmetic)
+- Context assembly (database queries)
+- FTS5 search (SQL)
+
+### Prompt Engineering for Boxing
+
+Each AI call uses structured prompts:
+
+```
+ROLE: You are an Eiffel expert wearing the [HAT_NAME] hat.
+CONSTRAINTS: [Mode-specific constraints from modes table]
+FOCUS: You are ONLY concerned with [FOCUS_AREA]. Do not discuss [BLOCKED_AREAS].
+CONTEXT: [Relevant spec/design/code]
+TASK: [User's actual request]
+OUTPUT_FORMAT: [Structured format for Eiffel parsing]
+```
+
+### Escape Prevention
+- Mode-specific prompts explicitly forbid out-of-scope discussion
+- Output validation rejects responses that don't match expected format
+- Hats cannot be switched mid-conversation
+- AI cannot request tools/commands - only Eiffel code executes
+- All AI output sanitized by DEV_SECURITY before display
+
+---
+
+## Transparency UX
+
+Users always know what simple_dev is doing:
+
+```
+[STEP 1/5] Loading project context...
+  - Spec: 'User authentication system' (approved)
+  - Design: 3 components, 12 classes
+  - Current task: Implement LOGIN_MANAGER
+
+[STEP 2/5] Preparing AI context...
+  - Mode: impl (implementation)
+  - Hat: Feature Hat
+  - Context size: 2,847 tokens
+
+[STEP 3/5] Calling AI (Claude Sonnet)...
+  - Estimated cost: $0.008
+  [████████░░░░░░░░] Working...
+
+[STEP 4/5] AI Response received
+  - Tokens: 1,234 in / 2,567 out
+  - Actual cost: $0.012
+  - Generated: 1 class, 5 features
+
+[STEP 5/5] Running post-hooks...
+  - [✓] Naming check: PASSED
+  - [✓] Security scan: PASSED
+  - [!] Contract suggestion: 2 postconditions recommended
+
+[REVIEW] Press Enter to see generated code, 'h' for hats review, 's' to skip
+```
+
+**Verbosity levels:** 0=quiet, 1=normal, 2=verbose, 3=debug (full prompts)
+
+**Intervention points:** User can interrupt at any step with Ctrl+C
+
+---
+
+## Version 0.7.x Roadmap: Multi-Pass Hat-Driven AI Orchestration
+
+*Added: 2025-12-31*
+
+### Vision
+
+Transform simple_dev from "prompt-and-respond" into a **multi-pass, hat-driven pipeline** where dev.exe algorithmically applies expert perspectives (hats) from `HATS.md` to iteratively refine artifacts.
+
+### Core Architecture
+
+```
+User Command → Orchestration Engine → Hat Pipeline → AI Backend → Verified Artifact
+                     │
+                     ├── Phase State Machine (Plan → Spec → Design → Implement → Build)
+                     ├── Hat Selection (based on phase and artifact type)
+                     ├── Context Injection (kb.db, project state, ISE patterns)
+                     └── User Decision Points (conflicts, critical findings)
+```
+
+### New Data Model
+
+**conversations table**: Track multi-turn AI interactions per artifact
+```sql
+CREATE TABLE conversations (
+    id INTEGER PRIMARY KEY,
+    project_id INTEGER NOT NULL,
+    phase INTEGER NOT NULL,
+    artifact_type TEXT NOT NULL,  -- 'plan', 'spec', 'design', 'code', 'test'
+    status TEXT DEFAULT 'active'
+);
+```
+
+**turns table**: Individual AI exchanges with hat context
+```sql
+CREATE TABLE turns (
+    id INTEGER PRIMARY KEY,
+    conversation_id INTEGER NOT NULL,
+    role TEXT NOT NULL,           -- 'user', 'ai', 'system'
+    hat_applied TEXT,             -- which hat was active
+    content TEXT NOT NULL
+);
+```
+
+**decisions table**: User decision points for traceability
+```sql
+CREATE TABLE decisions (
+    id INTEGER PRIMARY KEY,
+    conversation_id INTEGER NOT NULL,
+    question TEXT NOT NULL,
+    user_response TEXT NOT NULL,
+    rationale TEXT
+);
+```
+
+### Hat Pipeline (Phase 4 - Implementation)
+
+1. **Feature Hat** - Initial code generation
+2. **Contracting Hat** - DbC review (aggressive, not pedantic)
+3. **Code Review Hat** - Quality review with severity levels
+4. **Security Hat** - Security audit
+5. **Testing Hat** - Generate tests
+
+Each artifact passes through applicable hats with max 3 iterations per hat before escalating to user.
+
+### Compile Error Loop
+
+```
+compile → errors? → AI fix (with Contracting Hat) → review → recompile
+         ↑                                                    │
+         └────────────────── max 5 iterations ────────────────┘
+```
+
+After 5 failures, escalate to user with full context.
+
+### Rollback Triggers
+
+| Signal | Rollback To |
+|--------|-------------|
+| Compile errors suggest wrong architecture | Design |
+| Test failures reveal spec ambiguity | Spec |
+| Security review finds fundamental flaw | Design or Spec |
+| User feedback: "not what I wanted" | Spec |
+
+### Release Milestones
+
+**0.7.0 MVP**:
+- [ ] Contracting Hat applied to implementation
+- [ ] Compile error → AI fix → recompile loop
+- [ ] Basic user confirmation points
+- [ ] Conversation/turn persistence
+
+**0.7.1**:
+- [ ] Multi-hat pipeline (Contracting + Code Review)
+- [ ] Test generation with Testing Hat
+- [ ] Test failure → fix loop
+
+**0.7.2+**:
+- [ ] Full hat suite from HATS.md
+- [ ] Design questions (SCOOP, logging, etc.)
+- [ ] Rollback support
+- [ ] kb.db hat definitions
+
+### Reference Documents
+
+- `D:\prod\reference_docs\claude\HATS.md` - Hat definitions
+- `D:\prod\reference_docs\claude\verification_process.md` - Meyer's "probable to provable"
+- `D:\prod\reference_docs\claude\contract_patterns.md` - Complete postcondition templates
+- `D:\prod\simple_dev\docs\PLAN_0.7.x.md` - Detailed 0.7.x design document
+
+---
+
 ## Sources
 
 1. Liberty Lover (Larry) – Eiffel Users Mailing List, discussion on Simple Libraries challenge[^1]

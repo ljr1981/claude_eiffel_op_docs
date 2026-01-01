@@ -1,0 +1,966 @@
+{
+  "$schema": "../protocols/APPLICATION_JSON_SPEC_PROTOCOL.md",
+  "spec_version": "1.0",
+  "generated": "2025-12-30",
+  "generator": "Claude + Larry Rix",
+
+  "app": {
+    "name": "simple_dev",
+    "version": "0.6.11",
+    "description": "AI-orchestrated Eiffel development CLI - guides developers through full software lifecycle with persistent knowledge, structured workflows, and intelligent context injection",
+    "target": "Windows CLI (REPL)",
+    "primary_library": "simple_dev",
+    "ecf_target": "dev_cli",
+    "core_workflow": "Project -> Spec -> Design -> Tasks -> Implementation -> Testing -> Deployment"
+  },
+
+  "architecture": {
+    "pattern": "layered",
+    "tiers": [
+      {"name": "cli", "technology": "REPL with simple_cli", "responsibility": "Command parsing, user interaction, output formatting"},
+      {"name": "orchestrator", "technology": "DEV_AI_ORCHESTRATOR", "responsibility": "AI interaction, context injection, prompt construction"},
+      {"name": "project_manager", "technology": "DEV_PROJECT_MANAGER", "responsibility": "Project, spec, design, task management"},
+      {"name": "knowledge", "technology": "simple_kb + simple_oracle (read-only)", "responsibility": "Eiffel expertise, patterns, error resolution"},
+      {"name": "data_abstraction", "technology": "repositories", "responsibility": "CRUD for all entities"},
+      {"name": "persistence", "technology": "simple_sql (SQLite)", "responsibility": "dev.db storage with FTS5"}
+    ],
+    "external_dependencies": [
+      {"name": "Ollama", "purpose": "Local AI chat and embeddings", "required": false, "default_model": "llama3"},
+      {"name": "Claude API", "purpose": "Cloud AI for complex tasks", "required": false, "env_var": "ANTHROPIC_API_KEY"},
+      {"name": "ec.exe", "purpose": "Eiffel compilation", "required_for": "build/test commands"}
+    ]
+  },
+
+  "design_decisions": {
+    "ui_approach": {"choice": "CLI REPL First", "rationale": "Faster to prototype, add TUI in Phase 7"},
+    "oracle_integration": {"choice": "Defer/Consolidate", "rationale": "May fold into dev.db later, not critical now"},
+    "kb_integration": {"choice": "Writable Living KB", "rationale": "Can ingest any project, not static read-only"},
+    "project_scope": {"choice": "Single Project", "rationale": "One active project at a time, simpler context"},
+    "mvp_scope": {"choice": "Core + Context", "rationale": "Project CRUD, ask, history, handoffs"},
+    "processing_philosophy": {"choice": "Eiffel-First, AI-Minimal", "rationale": "Maximize deterministic Eiffel code, minimize AI touchpoints"}
+  },
+
+  "mode_system": {
+    "description": "Mode-aware CLI that locks focus and prevents straying",
+    "prompt_format": "dev:project:mode[hooks]>",
+    "prompt_examples": [
+      {"prompt": "dev>", "meaning": "No project open"},
+      {"prompt": "dev:myproj>", "meaning": "Project open, general mode"},
+      {"prompt": "dev:myproj:spec>", "meaning": "Specification mode"},
+      {"prompt": "dev:myproj:design>", "meaning": "Design mode"},
+      {"prompt": "dev:myproj:impl>", "meaning": "Implementation mode"},
+      {"prompt": "dev:myproj:impl[hats]>", "meaning": "Implementation with hats review active"}
+    ],
+    "modes": [
+      {
+        "name": "general",
+        "allowed_commands": ["all"],
+        "description": "No restrictions, can access any command"
+      },
+      {
+        "name": "spec",
+        "phase": 2,
+        "allowed_commands": ["spec new", "spec edit", "spec view", "spec approve", "ask", "history", "status", "exit"],
+        "blocked_commands": ["design", "task", "build", "test"],
+        "entry": "mode spec",
+        "exit": "exit or spec approve",
+        "focus": "Keep AI focused on WHAT not HOW"
+      },
+      {
+        "name": "design",
+        "phase": 3,
+        "allowed_commands": ["design new", "design component", "design pattern", "design review", "design approve", "ask", "history", "status", "exit"],
+        "blocked_commands": ["spec new", "task", "build", "test"],
+        "requires": "Approved specification",
+        "entry": "mode design",
+        "exit": "exit or design approve"
+      },
+      {
+        "name": "impl",
+        "phase": 4,
+        "allowed_commands": ["task", "ask", "review", "build", "test", "history", "status", "exit"],
+        "blocked_commands": ["spec new", "design new"],
+        "requires": "Approved design",
+        "entry": "mode impl",
+        "exit": "exit"
+      },
+      {
+        "name": "test",
+        "phase": 5,
+        "allowed_commands": ["test", "task", "review", "ask", "history", "status", "exit"],
+        "focus": "Testing and validation only"
+      }
+    ],
+    "mode_commands": [
+      {"name": "mode <name>", "description": "Enter a mode (spec, design, impl, test)"},
+      {"name": "mode", "description": "Show current mode and allowed commands"},
+      {"name": "exit", "description": "Exit current mode, return to general"}
+    ]
+  },
+
+  "hook_system": {
+    "description": "Pre/post command hooks - mostly Eiffel code, AI only when needed",
+    "philosophy": "Hooks are deterministic Eiffel checks; AI is called only for creative/analytical tasks",
+    "hook_types": [
+      {
+        "type": "always_on",
+        "description": "Run regardless of mode",
+        "examples": ["contract_check", "naming_convention_check", "security_scan"]
+      },
+      {
+        "type": "mode_specific",
+        "description": "Only run in certain modes",
+        "examples": ["spec_validation in spec mode", "design_consistency in design mode"]
+      },
+      {
+        "type": "user_configurable",
+        "description": "User can enable/disable",
+        "examples": ["verbose_hats_review", "auto_test_generation"]
+      }
+    ],
+    "pre_hooks": {
+      "description": "Run BEFORE command execution (Eiffel code)",
+      "hooks": [
+        {"name": "mode_guard", "check": "Is command allowed in current mode?", "implementation": "Eiffel"},
+        {"name": "phase_guard", "check": "Is project in correct phase?", "implementation": "Eiffel"},
+        {"name": "context_loader", "action": "Load relevant design/spec context", "implementation": "Eiffel"},
+        {"name": "contract_context", "action": "Load relevant contract patterns from kb.db", "implementation": "Eiffel + SQL"}
+      ]
+    },
+    "post_hooks": {
+      "description": "Run AFTER command execution (mix of Eiffel and optional AI)",
+      "hooks": [
+        {
+          "name": "hats_review",
+          "trigger": "After any code generation",
+          "implementation": "Eiffel orchestration, AI for analysis",
+          "hats_applied": [
+            {"hat": "Specification Hat", "check": "Does code match spec?", "ai_needed": true},
+            {"hat": "Contracting Hat", "check": "Suggest pre/post/invariant", "ai_needed": true},
+            {"hat": "Feature Hat", "check": "Naming conventions", "ai_needed": false, "eiffel_check": "NAMING_VALIDATOR"},
+            {"hat": "Testing Hat", "check": "Suggest test cases", "ai_needed": true},
+            {"hat": "Code Review Hat", "check": "Style, DRY, patterns", "ai_needed": "partial"},
+            {"hat": "Security Hat", "check": "OWASP, input validation", "ai_needed": false, "eiffel_check": "SECURITY_SCANNER"}
+          ]
+        },
+        {"name": "contract_completeness", "check": "Is postcondition TRUE but INCOMPLETE?", "ai_needed": true},
+        {"name": "decision_extractor", "action": "Extract decisions from AI conversation", "ai_needed": true},
+        {"name": "cost_logger", "action": "Log token usage and cost", "implementation": "Eiffel"}
+      ]
+    },
+    "hook_configuration": {
+      "table": "hook_config",
+      "user_overrides": true,
+      "example": {"hook": "verbose_hats_review", "enabled": false, "reason": "User disabled for speed"}
+    }
+  },
+
+  "entities": [
+    {
+      "name": "Project",
+      "description": "Development project being orchestrated",
+      "table": "projects",
+      "attributes": [
+        {"name": "id", "type": "INTEGER", "primary_key": true},
+        {"name": "name", "type": "STRING", "required": true, "unique": true},
+        {"name": "path", "type": "STRING", "required": true},
+        {"name": "description", "type": "STRING"},
+        {"name": "current_phase", "type": "INTEGER", "default": 1, "range": [1, 6]},
+        {"name": "created_at", "type": "DATETIME"},
+        {"name": "updated_at", "type": "DATETIME"}
+      ],
+      "phase_names": ["Ideation", "Specification", "Design", "Implementation", "Testing", "Deployment"]
+    },
+    {
+      "name": "Specification",
+      "description": "Project specification document",
+      "table": "specifications",
+      "attributes": [
+        {"name": "id", "type": "INTEGER", "primary_key": true},
+        {"name": "project_id", "type": "INTEGER", "foreign_key": "projects.id"},
+        {"name": "version", "type": "INTEGER", "default": 1},
+        {"name": "problem_statement", "type": "STRING", "required": true},
+        {"name": "users", "type": "JSON_ARRAY"},
+        {"name": "success_criteria", "type": "JSON_ARRAY"},
+        {"name": "constraints", "type": "STRING"},
+        {"name": "assumptions", "type": "STRING"},
+        {"name": "status", "type": "ENUM", "values": ["draft", "approved", "superseded"], "default": "draft"},
+        {"name": "approved_at", "type": "DATETIME"},
+        {"name": "created_at", "type": "DATETIME"}
+      ]
+    },
+    {
+      "name": "Design",
+      "description": "Architecture and component design",
+      "table": "designs",
+      "attributes": [
+        {"name": "id", "type": "INTEGER", "primary_key": true},
+        {"name": "project_id", "type": "INTEGER", "foreign_key": "projects.id"},
+        {"name": "spec_id", "type": "INTEGER", "foreign_key": "specifications.id"},
+        {"name": "version", "type": "INTEGER", "default": 1},
+        {"name": "components", "type": "JSON", "schema": "[{name, responsibility, classes}]"},
+        {"name": "patterns_used", "type": "JSON_ARRAY"},
+        {"name": "class_diagram", "type": "STRING", "format": "Mermaid/ASCII"},
+        {"name": "status", "type": "ENUM", "values": ["draft", "approved"], "default": "draft"},
+        {"name": "created_at", "type": "DATETIME"}
+      ]
+    },
+    {
+      "name": "Task",
+      "description": "Implementation task",
+      "table": "tasks",
+      "attributes": [
+        {"name": "id", "type": "INTEGER", "primary_key": true},
+        {"name": "project_id", "type": "INTEGER", "foreign_key": "projects.id"},
+        {"name": "design_id", "type": "INTEGER", "foreign_key": "designs.id"},
+        {"name": "parent_id", "type": "INTEGER", "foreign_key": "tasks.id", "note": "Subtask support"},
+        {"name": "title", "type": "STRING", "required": true},
+        {"name": "description", "type": "STRING"},
+        {"name": "component", "type": "STRING"},
+        {"name": "status", "type": "ENUM", "values": ["pending", "in_progress", "blocked", "completed"], "default": "pending"},
+        {"name": "priority", "type": "INTEGER", "default": 3, "range": [1, 5]},
+        {"name": "blocked_reason", "type": "STRING"},
+        {"name": "estimated_minutes", "type": "INTEGER"},
+        {"name": "actual_minutes", "type": "INTEGER"},
+        {"name": "created_at", "type": "DATETIME"},
+        {"name": "started_at", "type": "DATETIME"},
+        {"name": "completed_at", "type": "DATETIME"}
+      ]
+    },
+    {
+      "name": "Conversation",
+      "description": "AI interaction history",
+      "table": "conversations",
+      "attributes": [
+        {"name": "id", "type": "INTEGER", "primary_key": true},
+        {"name": "project_id", "type": "INTEGER", "foreign_key": "projects.id"},
+        {"name": "session_id", "type": "STRING", "required": true, "note": "UUID per dev session"},
+        {"name": "phase", "type": "STRING"},
+        {"name": "query_type", "type": "ENUM", "values": ["ideation", "design", "review", "ask", "suggest", "explain"]},
+        {"name": "user_message", "type": "STRING", "required": true},
+        {"name": "ai_response", "type": "STRING", "required": true},
+        {"name": "model_used", "type": "STRING"},
+        {"name": "input_tokens", "type": "INTEGER"},
+        {"name": "output_tokens", "type": "INTEGER"},
+        {"name": "cost_usd", "type": "REAL"},
+        {"name": "created_at", "type": "DATETIME"}
+      ],
+      "fts5": {"columns": ["user_message", "ai_response"], "tokenize": "porter unicode61"}
+    },
+    {
+      "name": "Decision",
+      "description": "Recorded design/implementation decision",
+      "table": "decisions",
+      "attributes": [
+        {"name": "id", "type": "INTEGER", "primary_key": true},
+        {"name": "project_id", "type": "INTEGER", "foreign_key": "projects.id"},
+        {"name": "conversation_id", "type": "INTEGER", "foreign_key": "conversations.id"},
+        {"name": "category", "type": "ENUM", "values": ["architecture", "library", "pattern", "naming", "other"]},
+        {"name": "summary", "type": "STRING", "required": true},
+        {"name": "rationale", "type": "STRING"},
+        {"name": "alternatives", "type": "JSON_ARRAY"},
+        {"name": "created_at", "type": "DATETIME"}
+      ],
+      "fts5": {"columns": ["summary", "rationale"], "tokenize": "porter unicode61"}
+    },
+    {
+      "name": "SessionHandoff",
+      "description": "Context continuity across sessions",
+      "table": "session_handoffs",
+      "attributes": [
+        {"name": "id", "type": "INTEGER", "primary_key": true},
+        {"name": "project_id", "type": "INTEGER", "foreign_key": "projects.id"},
+        {"name": "session_id", "type": "STRING"},
+        {"name": "current_task", "type": "STRING"},
+        {"name": "work_in_progress", "type": "STRING"},
+        {"name": "next_steps", "type": "STRING"},
+        {"name": "blockers", "type": "STRING"},
+        {"name": "context_summary", "type": "STRING"},
+        {"name": "created_at", "type": "DATETIME"}
+      ]
+    },
+    {
+      "name": "Build",
+      "description": "Compilation history",
+      "table": "builds",
+      "attributes": [
+        {"name": "id", "type": "INTEGER", "primary_key": true},
+        {"name": "project_id", "type": "INTEGER", "foreign_key": "projects.id"},
+        {"name": "target", "type": "STRING", "required": true},
+        {"name": "success", "type": "BOOLEAN"},
+        {"name": "duration_seconds", "type": "REAL"},
+        {"name": "error_summary", "type": "STRING"},
+        {"name": "created_at", "type": "DATETIME"}
+      ]
+    },
+    {
+      "name": "TestRun",
+      "description": "Test execution history",
+      "table": "test_runs",
+      "attributes": [
+        {"name": "id", "type": "INTEGER", "primary_key": true},
+        {"name": "project_id", "type": "INTEGER", "foreign_key": "projects.id"},
+        {"name": "target", "type": "STRING", "required": true},
+        {"name": "total_tests", "type": "INTEGER"},
+        {"name": "passed", "type": "INTEGER"},
+        {"name": "failed", "type": "INTEGER"},
+        {"name": "duration_seconds", "type": "REAL"},
+        {"name": "failures_json", "type": "JSON"},
+        {"name": "created_at", "type": "DATETIME"}
+      ]
+    }
+  ],
+
+  "commands": {
+    "startup": [
+      {"name": "dev", "description": "Start in current directory"},
+      {"name": "dev new <project>", "description": "Create new project scaffold"},
+      {"name": "dev open <path>", "description": "Open existing project"},
+      {"name": "dev resume", "description": "Resume last session (auto-load handoff)"}
+    ],
+    "navigation": [
+      {"name": "status", "description": "Show project state, active phase, recent AI costs"},
+      {"name": "phase [N]", "description": "Show/change development phase (1-6)"},
+      {"name": "context", "description": "Show injected context for next AI call"},
+      {"name": "history", "description": "Browse conversation/decision history"}
+    ],
+    "specification": [
+      {"name": "spec new", "description": "Start ideation dialog (multi-turn)"},
+      {"name": "spec edit", "description": "Modify current specification"},
+      {"name": "spec view", "description": "Display specification document"},
+      {"name": "spec approve", "description": "Lock spec, transition to design phase"}
+    ],
+    "design": [
+      {"name": "design new", "description": "AI-assisted design session"},
+      {"name": "design component <name>", "description": "Add/detail component"},
+      {"name": "design pattern <name>", "description": "Apply design pattern"},
+      {"name": "design review", "description": "AI review of design"},
+      {"name": "design approve", "description": "Lock design, transition to tasks"}
+    ],
+    "tasks": [
+      {"name": "task list [--filter]", "description": "List tasks with filters"},
+      {"name": "task add <title>", "description": "Quick task creation"},
+      {"name": "task ai \"<description>\"", "description": "AI-parsed task creation"},
+      {"name": "task next", "description": "Get recommended next task"},
+      {"name": "task start <id>", "description": "Mark task in-progress"},
+      {"name": "task done <id>", "description": "Complete task"},
+      {"name": "task block <id> <reason>", "description": "Mark blocked with reason"}
+    ],
+    "build": [
+      {"name": "build [target]", "description": "Run ec.exe, log to oracle"},
+      {"name": "test [target]", "description": "Run tests, log results"},
+      {"name": "check", "description": "Run assertions, contracts check"}
+    ],
+    "ai": [
+      {"name": "ask \"<question>\"", "description": "Direct AI query with context"},
+      {"name": "review <file>", "description": "AI code review"},
+      {"name": "suggest <topic>", "description": "Get AI suggestions"},
+      {"name": "explain <concept>", "description": "AI explanation with codebase context"}
+    ],
+    "session": [
+      {"name": "save", "description": "Persist current state"},
+      {"name": "handoff", "description": "Create handoff for next session"},
+      {"name": "export", "description": "Export project docs"},
+      {"name": "cost", "description": "Show AI cost summary"},
+      {"name": "quit", "description": "Exit with handoff prompt"}
+    ]
+  },
+
+  "ai_context_injection": {
+    "layers": [
+      {
+        "name": "expertise",
+        "frequency": "once_per_session",
+        "sources": ["simple_oracle.inject_expertise", "simple_kb patterns/errors"],
+        "content": ["Eiffel DBC patterns", "Void safety rules", "SCOOP guidelines", "simple_* ecosystem rules"]
+      },
+      {
+        "name": "project",
+        "frequency": "per_conversation",
+        "sources": ["specifications", "designs", "decisions", "recent builds/tests"],
+        "content": ["Spec summary", "Design decisions", "Active tasks", "Recent errors"]
+      },
+      {
+        "name": "query",
+        "frequency": "per_request",
+        "sources": ["FTS5 search", "relevant code files"],
+        "content": ["Related past decisions (RAG)", "Code snippets", "Similar errors from kb.db"]
+      }
+    ],
+    "model_selection": {
+      "ask": {"model": "haiku/sonnet", "context": "full"},
+      "spec_new": {"model": "opus", "context": "minimal"},
+      "design": {"model": "opus", "context": "full"},
+      "review": {"model": "sonnet", "context": "code-focused"},
+      "suggest": {"model": "haiku", "context": "project_summary"},
+      "task_ai": {"model": "haiku", "context": "tasks_only"}
+    },
+    "token_efficiency": [
+      "Summarize specs/designs before injection",
+      "Selective context by query type",
+      "Rolling window (last 5 turns, summarize older)",
+      "Cache expertise injection per session",
+      "Use Haiku for simple queries"
+    ]
+  },
+
+  "libraries": {
+    "simple_eiffel": [
+      {"name": "simple_ai_client", "usage": "AI_CLIENT, AI_MESSAGE, AI_RESPONSE, CLAUDE_CLIENT, OLLAMA_CLIENT"},
+      {"name": "simple_sql", "usage": "SIMPLE_SQL_DATABASE, FTS5, repositories, migrations"},
+      {"name": "simple_kb", "usage": "KB_QUICK, KB_ERROR_INFO, KB_PATTERN, kb.db (16MB Eiffel knowledge)"},
+      {"name": "simple_json", "usage": "JSON parsing for structured AI responses"},
+      {"name": "simple_process", "usage": "ec.exe execution, test running"},
+      {"name": "simple_datetime", "usage": "Timestamps, duration tracking"},
+      {"name": "simple_cli", "usage": "Argument parsing for CLI mode"},
+      {"name": "simple_console", "usage": "Colored output, cursor control"},
+      {"name": "simple_tui", "usage": "Full TUI in Phase 7", "phase": 7}
+    ],
+    "read_only_integration": [
+      {"name": "simple_oracle", "db": "oracle.db", "usage": "inject_expertise, FTS5 knowledge, handoff patterns"},
+      {"name": "simple_kb", "db": "kb.db", "usage": "Error lookup, class docs, patterns, examples"}
+    ],
+    "ise": [
+      {"name": "base", "usage": "Core data structures"},
+      {"name": "time", "usage": "DATE_TIME"}
+    ]
+  },
+
+  "classes": {
+    "core": [
+      {"name": "SIMPLE_DEV", "file": "src/core/simple_dev.e", "description": "Main facade"},
+      {"name": "DEV_PROJECT", "file": "src/core/dev_project.e", "description": "Project model"},
+      {"name": "DEV_SPECIFICATION", "file": "src/core/dev_specification.e", "description": "Spec model"},
+      {"name": "DEV_DESIGN", "file": "src/core/dev_design.e", "description": "Design model"},
+      {"name": "DEV_TASK", "file": "src/core/dev_task.e", "description": "Task model"}
+    ],
+    "ai": [
+      {"name": "DEV_AI_ORCHESTRATOR", "file": "src/ai/dev_ai_orchestrator.e", "description": "AI management"},
+      {"name": "DEV_CONTEXT_BUILDER", "file": "src/ai/dev_context_builder.e", "description": "Context injection"},
+      {"name": "DEV_PROMPT_TEMPLATES", "file": "src/ai/dev_prompt_templates.e", "description": "Prompt templates"},
+      {"name": "DEV_COST_TRACKER", "file": "src/ai/dev_cost_tracker.e", "description": "Cost tracking"}
+    ],
+    "database": [
+      {"name": "DEV_DATABASE", "file": "src/database/dev_database.e", "description": "DB wrapper"},
+      {"name": "DEV_PROJECT_REPO", "file": "src/database/dev_project_repo.e", "description": "Project repository"},
+      {"name": "DEV_SPEC_REPO", "file": "src/database/dev_spec_repo.e", "description": "Spec repository"},
+      {"name": "DEV_DESIGN_REPO", "file": "src/database/dev_design_repo.e", "description": "Design repository"},
+      {"name": "DEV_TASK_REPO", "file": "src/database/dev_task_repo.e", "description": "Task repository"},
+      {"name": "DEV_CONVERSATION_REPO", "file": "src/database/dev_conversation_repo.e", "description": "Conversation repository"},
+      {"name": "DEV_DECISION_REPO", "file": "src/database/dev_decision_repo.e", "description": "Decision repository"}
+    ],
+    "session": [
+      {"name": "DEV_SESSION_MANAGER", "file": "src/session/dev_session_manager.e", "description": "Session management"},
+      {"name": "DEV_HANDOFF", "file": "src/session/dev_handoff.e", "description": "Handoff model"}
+    ],
+    "build": [
+      {"name": "DEV_BUILD_MANAGER", "file": "src/build/dev_build_manager.e", "description": "Build orchestration"},
+      {"name": "DEV_COMPILER", "file": "src/build/dev_compiler.e", "description": "ec.exe wrapper"},
+      {"name": "DEV_TEST_RUNNER", "file": "src/build/dev_test_runner.e", "description": "Test execution"}
+    ],
+    "cli": [
+      {"name": "DEV_CLI", "file": "src/cli/dev_cli.e", "description": "CLI entry point with REPL"}
+    ],
+    "tui": [
+      {"name": "DEV_APPLICATION", "file": "src/tui/dev_application.e", "description": "TUI application", "phase": 7},
+      {"name": "DEV_MAIN_VIEW", "file": "src/tui/dev_main_view.e", "description": "Main screen", "phase": 7},
+      {"name": "DEV_SPEC_DIALOG", "file": "src/tui/dev_spec_dialog.e", "description": "Spec dialog", "phase": 7},
+      {"name": "DEV_DESIGN_DIALOG", "file": "src/tui/dev_design_dialog.e", "description": "Design dialog", "phase": 7},
+      {"name": "DEV_TASK_DIALOG", "file": "src/tui/dev_task_dialog.e", "description": "Task dialog", "phase": 7}
+    ]
+  },
+
+  "implementation_phases": [
+    {
+      "phase": 1,
+      "name": "Core CLI Foundation",
+      "deliverables": ["Project structure", "ECF", "Database schema", "Basic REPL", "Project CRUD", "Simple ask command"]
+    },
+    {
+      "phase": 2,
+      "name": "Context & Memory",
+      "deliverables": ["DEV_CONTEXT_BUILDER", "Conversation history", "Session handoffs", "FTS5 search", "Cost tracking"]
+    },
+    {
+      "phase": 3,
+      "name": "Specification Workflow",
+      "deliverables": ["spec new/view/edit/approve", "Versioning", "AI ideation prompts"]
+    },
+    {
+      "phase": 4,
+      "name": "Design Workflow",
+      "deliverables": ["design new/component/pattern/review/approve", "Design docs"]
+    },
+    {
+      "phase": 5,
+      "name": "Task Management",
+      "deliverables": ["Task CRUD", "AI parsing", "Recommendations", "Design linking"]
+    },
+    {
+      "phase": 6,
+      "name": "Build Integration",
+      "deliverables": ["build/test commands", "Error capture", "Oracle sync"]
+    },
+    {
+      "phase": 7,
+      "name": "TUI Application",
+      "deliverables": ["Full TUI", "Dialogs", "Keyboard shortcuts"]
+    },
+    {
+      "phase": 8,
+      "name": "Production Polish",
+      "deliverables": ["Cost limits", "Export/import", "Documentation", "Test suite"]
+    }
+  ],
+
+  "databases": {
+    "primary": {
+      "name": "dev.db",
+      "location": "~/.simple_dev/dev.db or project-local",
+      "purpose": "Project data, conversations, decisions, handoffs, modes, hooks"
+    },
+    "knowledge_base": {
+      "name": "kb.db",
+      "location": "$SIMPLE_EIFFEL/simple_kb/bin/kb.db",
+      "access": "Read/Write (living knowledge base)",
+      "purpose": "Eiffel errors, patterns, classes, examples, parsed reference docs",
+      "can_ingest": ["simple_* libraries", "any Eiffel project"],
+      "commands": ["kb ingest <path>", "kb update", "kb search <query>"]
+    },
+    "deferred": {
+      "name": "oracle.db",
+      "status": "May consolidate into dev.db/kb.db later",
+      "current_use": "Ecosystem knowledge (optional attach)"
+    }
+  },
+
+  "knowledge_architecture": {
+    "description": "Structured storage for parsed reference docs and ingested project knowledge",
+    "tables": {
+      "knowledge_items": {
+        "purpose": "Parsed content from reference docs (HATS.md, contract_patterns.md, etc.)",
+        "columns": [
+          {"name": "id", "type": "INTEGER PRIMARY KEY"},
+          {"name": "category", "type": "TEXT", "values": ["hat", "contract_pattern", "verification_step", "mental_model", "design_process", "mentoring", "introspection", "compaction"]},
+          {"name": "name", "type": "TEXT", "required": true},
+          {"name": "content", "type": "TEXT", "required": true},
+          {"name": "source_file", "type": "TEXT"},
+          {"name": "tags", "type": "JSON_ARRAY"},
+          {"name": "triggers", "type": "JSON_ARRAY", "note": "Commands/keywords that activate this knowledge"},
+          {"name": "created_at", "type": "DATETIME"}
+        ],
+        "fts5": {"columns": ["name", "content"], "tokenize": "porter unicode61"}
+      },
+      "modes": {
+        "purpose": "Mode definitions and state",
+        "columns": [
+          {"name": "id", "type": "INTEGER PRIMARY KEY"},
+          {"name": "name", "type": "TEXT UNIQUE", "required": true},
+          {"name": "phase", "type": "INTEGER"},
+          {"name": "allowed_commands", "type": "JSON_ARRAY"},
+          {"name": "blocked_commands", "type": "JSON_ARRAY"},
+          {"name": "requires", "type": "TEXT"},
+          {"name": "focus_prompt", "type": "TEXT", "note": "Injected into AI prompts when in this mode"}
+        ]
+      },
+      "hooks": {
+        "purpose": "Hook definitions",
+        "columns": [
+          {"name": "id", "type": "INTEGER PRIMARY KEY"},
+          {"name": "name", "type": "TEXT UNIQUE", "required": true},
+          {"name": "hook_type", "type": "TEXT", "values": ["pre", "post"]},
+          {"name": "trigger", "type": "TEXT", "note": "Command pattern or 'always'"},
+          {"name": "implementation", "type": "TEXT", "values": ["eiffel", "ai", "eiffel+ai"]},
+          {"name": "eiffel_class", "type": "TEXT", "note": "Class that implements this hook"},
+          {"name": "ai_prompt_template", "type": "TEXT", "note": "Prompt if AI needed"},
+          {"name": "enabled", "type": "BOOLEAN", "default": true},
+          {"name": "order", "type": "INTEGER", "default": 100}
+        ]
+      },
+      "hook_config": {
+        "purpose": "User overrides for hooks",
+        "columns": [
+          {"name": "id", "type": "INTEGER PRIMARY KEY"},
+          {"name": "project_id", "type": "INTEGER", "foreign_key": "projects.id"},
+          {"name": "hook_id", "type": "INTEGER", "foreign_key": "hooks.id"},
+          {"name": "enabled", "type": "BOOLEAN"},
+          {"name": "custom_params", "type": "JSON"}
+        ]
+      }
+    },
+    "reference_doc_parsing": {
+      "description": "Parse these docs into knowledge_items table",
+      "docs": [
+        {"file": "HATS.md", "category": "hat", "extract": "Each hat definition with triggers and focus"},
+        {"file": "contract_patterns.md", "category": "contract_pattern", "extract": "Each pattern with example"},
+        {"file": "verification_process.md", "category": "verification_step", "extract": "Each phase and check"},
+        {"file": "EIFFEL_MENTAL_MODEL.md", "category": "mental_model", "extract": "Core concepts"},
+        {"file": "simple_library_design_process.md", "category": "design_process", "extract": "7-step process"},
+        {"file": "mentoring_mode.md", "category": "mentoring", "extract": "Teaching patterns"},
+        {"file": "ec_introspection_howto.md", "category": "introspection", "extract": "Compiler introspection techniques"},
+        {"file": "compaction_instructions.md", "category": "compaction", "extract": "Context compression handling"},
+        {"file": "CONTEXT.md", "category": "context", "extract": "Session context patterns"}
+      ]
+    },
+    "eiffel_terminology": {
+      "purpose": "Store Eiffel-specific terminology with aliases for RAG detection",
+      "storage": "kb.db",
+      "source": "Eiffel.org glossary",
+      "note": "NEVER hardcode in Eiffel source - always query from DB",
+      "terms": [
+        {"canonical": "feature", "aliases": ["method", "function", "routine"], "category": "member"},
+        {"canonical": "command", "aliases": ["procedure", "setter", "void routine", "mutator"], "category": "routine_type"},
+        {"canonical": "query", "aliases": ["getter", "accessor", "function"], "category": "routine_type"},
+        {"canonical": "precondition", "aliases": ["require", "pre"], "category": "contract"},
+        {"canonical": "postcondition", "aliases": ["ensure", "post"], "category": "contract"},
+        {"canonical": "invariant", "aliases": ["class invariant"], "category": "contract"}
+      ]
+    },
+    "error_prefixes": {
+      "purpose": "Known Eiffel compiler error prefixes for RAG detection",
+      "storage": "kb.db",
+      "note": "Query at startup, cache in DEV_KNOWLEDGE_CACHE singleton",
+      "prefixes": ["VD", "VE", "VJ", "VT", "VC", "VF", "VG", "VI", "VN", "VO", "VP", "VQ", "VR", "VS", "VU", "VW", "EC", "EI"]
+    },
+    "project_ingestion": {
+      "purpose": "Ingest existing Eiffel projects into kb.db for RAG",
+      "leverages": "simple_kb's ECF parsing and class ingestion",
+      "table": {
+        "name": "project_ingestion",
+        "in_db": "dev.db",
+        "columns": [
+          {"name": "project_id", "type": "INTEGER PRIMARY KEY"},
+          {"name": "ecf_path", "type": "TEXT"},
+          {"name": "last_ingested_at", "type": "DATETIME"},
+          {"name": "class_count", "type": "INTEGER"},
+          {"name": "feature_count", "type": "INTEGER"},
+          {"name": "needs_refresh", "type": "BOOLEAN", "default": false}
+        ]
+      },
+      "commands": [
+        {"name": "project ingest <ecf>", "description": "Ingest Eiffel project classes/features into kb.db"},
+        {"name": "project refresh", "description": "Re-ingest current project (sync changes)"},
+        {"name": "project sync", "description": "Check if project files changed since last ingest"},
+        {"name": "project status", "description": "Show ingestion state, last sync time"}
+      ],
+      "reverse_engineering": {
+        "trigger": "When opening project with code but no specs/plans folders",
+        "workflow": [
+          "Detect missing specs/ and plans/ folders",
+          "Offer to generate initial spec from existing code",
+          "Use ingested class/feature data to populate spec fields"
+        ]
+      },
+      "dogfooding": {
+        "requirement": "simple_dev MUST be able to ingest and develop itself",
+        "test_case": "dev open D:/prod/simple_dev; ask 'How does spec workflow work?'",
+        "expected": "RAG returns context from DEV_CLI, DEV_SPECIFICATION, DEV_SPEC_REPO"
+      }
+    },
+    "caching_strategy": {
+      "class": "DEV_KNOWLEDGE_CACHE",
+      "pattern": "Eiffel once (PROCESS) singleton",
+      "purpose": "Load all reference data at startup, never hit DB repeatedly",
+      "loads_at_startup": ["eiffel_terms", "error_prefixes", "pattern_keywords", "mode_definitions"],
+      "refresh": "Optional reload feature if DB updated during session"
+    }
+  },
+
+  "transparency_ux": {
+    "description": "User always knows what dev is doing - step-by-step visibility",
+    "problem_addressed": "With Claude Code, user often doesn't know what AI is doing or why",
+    "principles": [
+      "SHOW every step before it happens",
+      "SHOW what context is being sent to AI",
+      "SHOW what AI returned",
+      "SHOW evaluation/validation results",
+      "WAIT for user acknowledgment at key decision points",
+      "ALLOW interrupt/redirect at any time"
+    ],
+    "step_display_format": {
+      "example": [
+        "[STEP 1/5] Loading project context...",
+        "  - Spec: 'User authentication system' (approved)",
+        "  - Design: 3 components, 12 classes",
+        "  - Current task: Implement LOGIN_MANAGER",
+        "",
+        "[STEP 2/5] Preparing AI context...",
+        "  - Mode: impl (implementation)",
+        "  - Hat: Feature Hat",
+        "  - Context size: 2,847 tokens",
+        "  - Injecting: spec summary, design for LOGIN_MANAGER, contract patterns",
+        "",
+        "[STEP 3/5] Calling AI (Claude Sonnet)...",
+        "  - Estimated cost: $0.008",
+        "  [████████░░░░░░░░] Working...",
+        "",
+        "[STEP 4/5] AI Response received",
+        "  - Tokens: 1,234 in / 2,567 out",
+        "  - Actual cost: $0.012",
+        "  - Generated: 1 class, 5 features",
+        "",
+        "[STEP 5/5] Running post-hooks...",
+        "  - [✓] Naming check: PASSED",
+        "  - [✓] Security scan: PASSED",
+        "  - [!] Contract suggestion: 2 postconditions recommended",
+        "  - [?] Spec match: Review recommended",
+        "",
+        "[REVIEW] Press Enter to see generated code, 'h' for hats review, 's' to skip, 'r' to redo"
+      ]
+    },
+    "interaction_points": {
+      "description": "Points where user can intervene",
+      "points": [
+        {"point": "before_ai_call", "prompt": "Send to AI? [Y/n/edit]", "allows": ["proceed", "cancel", "edit context"]},
+        {"point": "after_ai_response", "prompt": "Accept? [Y/n/review]", "allows": ["accept", "reject", "review details"]},
+        {"point": "after_hooks", "prompt": "Apply suggestions? [Y/n/select]", "allows": ["apply all", "skip", "select individually"]},
+        {"point": "any_time", "key": "Ctrl+C", "action": "Interrupt and return to prompt"}
+      ]
+    },
+    "verbosity_levels": {
+      "description": "User can control how much detail is shown",
+      "levels": [
+        {"level": 0, "name": "quiet", "shows": "Results only"},
+        {"level": 1, "name": "normal", "shows": "Steps + results (default)"},
+        {"level": 2, "name": "verbose", "shows": "Steps + context + results"},
+        {"level": 3, "name": "debug", "shows": "Everything including full prompts"}
+      ],
+      "command": "verbose [0-3]"
+    },
+    "context_inspection": {
+      "description": "User can see exactly what's being sent to AI",
+      "commands": [
+        {"name": "context", "shows": "Current context that would be sent to AI"},
+        {"name": "context full", "shows": "Full prompt including system message"},
+        {"name": "context size", "shows": "Token count breakdown by section"}
+      ]
+    },
+    "project_switching": {
+      "description": "User can switch projects mid-stream",
+      "commands": [
+        {"name": "switch <project>", "action": "Save current state, open different project"},
+        {"name": "projects", "action": "List all projects with current status"},
+        {"name": "back", "action": "Return to previous project"}
+      ],
+      "state_preservation": "Current work is auto-saved before switch"
+    }
+  },
+
+  "ai_boxing_strategy": {
+    "description": "Engineered prompting to keep AI in a box - deterministic control, constrained output",
+    "philosophy": "AI is a tool, not an autonomous agent. Eiffel code controls when/how AI is invoked.",
+    "principles": [
+      "AI NEVER decides what to do next - Eiffel mode/hook system decides",
+      "AI receives EXACTLY the context it needs - no more, no less",
+      "AI output is ALWAYS validated by Eiffel code before use",
+      "AI cannot escape its assigned 'hat' within a single call",
+      "All AI calls are logged, auditable, and cost-tracked"
+    ],
+    "prompt_engineering": {
+      "structure": [
+        {"section": "ROLE", "content": "You are an Eiffel expert wearing the [HAT_NAME] hat."},
+        {"section": "CONSTRAINTS", "content": "Mode-specific constraints injected from modes table"},
+        {"section": "FOCUS", "content": "You are ONLY concerned with [FOCUS_AREA]. Do not discuss [BLOCKED_AREAS]."},
+        {"section": "CONTEXT", "content": "Relevant spec/design/code injected by Eiffel"},
+        {"section": "TASK", "content": "User's actual request"},
+        {"section": "OUTPUT_FORMAT", "content": "Structured output format for Eiffel parsing"}
+      ],
+      "output_parsing": {
+        "description": "AI output must be parseable by Eiffel code",
+        "formats": [
+          {"type": "code_generation", "markers": ["```eiffel", "```"], "parser": "DEV_CODE_PARSER"},
+          {"type": "contract_suggestion", "format": "JSON with require/ensure arrays", "parser": "DEV_CONTRACT_PARSER"},
+          {"type": "review_findings", "format": "JSON with severity/issue/suggestion", "parser": "DEV_REVIEW_PARSER"},
+          {"type": "decision", "format": "JSON with category/summary/rationale", "parser": "DEV_DECISION_PARSER"}
+        ]
+      }
+    },
+    "ai_touchpoints": {
+      "description": "Exhaustive list of where AI is called - minimize these",
+      "creative_tasks": [
+        {"task": "spec new (ideation)", "ai_needed": true, "reason": "Creative problem exploration"},
+        {"task": "design new", "ai_needed": true, "reason": "Architectural creativity"},
+        {"task": "suggest contracts", "ai_needed": true, "reason": "Semantic understanding of intent"}
+      ],
+      "analytical_tasks": [
+        {"task": "code review", "ai_needed": true, "reason": "Pattern recognition beyond simple rules"},
+        {"task": "spec match check", "ai_needed": true, "reason": "Semantic comparison"},
+        {"task": "contract completeness", "ai_needed": true, "reason": "Identify missing postconditions"}
+      ],
+      "deterministic_tasks": [
+        {"task": "naming convention check", "ai_needed": false, "implementation": "NAMING_VALIDATOR class"},
+        {"task": "mode guard", "ai_needed": false, "implementation": "DEV_MODE_MANAGER class"},
+        {"task": "security scan", "ai_needed": false, "implementation": "DEV_SECURITY class"},
+        {"task": "cost logging", "ai_needed": false, "implementation": "DEV_COST_TRACKER class"},
+        {"task": "context loading", "ai_needed": false, "implementation": "DEV_CONTEXT_BUILDER class"},
+        {"task": "FTS5 search", "ai_needed": false, "implementation": "SQL query"}
+      ]
+    },
+    "escape_prevention": {
+      "description": "Prevent AI from escaping its box",
+      "measures": [
+        "Mode-specific system prompts that explicitly forbid out-of-scope discussion",
+        "Output validation rejects responses that don't match expected format",
+        "Hats cannot be switched mid-conversation - new hat = new conversation",
+        "AI cannot request tools/commands - only Eiffel code can execute",
+        "Security module sanitizes all AI output before display/storage"
+      ]
+    }
+  },
+
+  "working_hats": {
+    "description": "AI working modes from D:/prod/reference_docs/claude/HATS.md - focus AI on specific task types",
+    "hats": [
+      {"name": "Specification Hat", "trigger": ["spec new", "design"], "focus": "Write contracts BEFORE implementation"},
+      {"name": "Contracting Hat", "trigger": ["contracts", "harden"], "focus": "Add/review/strengthen contracts"},
+      {"name": "Feature Hat", "trigger": ["implement", "build"], "focus": "Implement new functionality"},
+      {"name": "Testing Hat", "trigger": ["test"], "focus": "Write and improve tests"},
+      {"name": "Code Review Hat", "trigger": ["review"], "focus": "Deep-dive code review with severity levels"},
+      {"name": "Security Hat", "trigger": ["security", "audit"], "focus": "Identify vulnerabilities and harden code"},
+      {"name": "Refactoring Hat", "trigger": ["refactor"], "focus": "Improve structure without changing behavior"},
+      {"name": "Documentation Hat", "trigger": ["docs"], "focus": "Write and improve documentation"},
+      {"name": "Profiler Hat", "trigger": ["profile", "perf"], "focus": "Performance profiling"},
+      {"name": "Mock Building Hat", "trigger": ["mock", "demo"], "focus": "Create mock consumers to exercise API"}
+    ],
+    "workflow_combinations": [
+      {"sequence": ["Specification Hat", "Feature Hat", "Testing Hat", "Contracting Hat"], "use_case": "New feature development"},
+      {"sequence": ["Profiler Hat", "Performance Hat"], "use_case": "Performance optimization"},
+      {"sequence": ["Testing Hat", "Feature Hat", "Contracting Hat"], "use_case": "Bug fix"}
+    ]
+  },
+
+  "security": {
+    "description": "Prompt injection protection based on 39C3 research",
+    "attack_vectors_addressed": [
+      {"attack": "Unicode tag characters", "protection": "Sanitize all AI responses, strip U+E0000-U+E007F"},
+      {"attack": "Hidden prompts in comments", "protection": "Never auto-execute AI suggestions"},
+      {"attack": "Configuration hijacking (YOLO mode)", "protection": "ALWAYS require user confirmation for actions"},
+      {"attack": "DNS exfiltration", "protection": "Detect and warn on suspicious patterns (ping, nslookup, etc.)"},
+      {"attack": "Credential access", "protection": "Flag .env, api_key, credentials references"}
+    ],
+    "principles": [
+      "NEVER auto-approve any action",
+      "ALWAYS sanitize AI responses before display",
+      "NEVER execute AI-suggested code automatically",
+      "LOG all AI interactions for audit",
+      "Model is NOT a trustworthy actor in threat model"
+    ],
+    "class": "DEV_SECURITY",
+    "file": "src/security/dev_security.e"
+  },
+
+  "verification_process": {
+    "description": "From Meyer's 'AI for software engineering: probable to provable' (CACM 2025)",
+    "principle": "Specify a little, implement a little; attempt to verify; hit a property that does not verify; correct spec/impl; repeat",
+    "phases": [
+      {"phase": 1, "name": "Specification", "focus": "WHAT not HOW", "output": "Contracts (pre/post/invariants)"},
+      {"phase": 2, "name": "Implementation", "focus": "HOW to achieve WHAT", "output": "Code satisfying contracts"},
+      {"phase": 3, "name": "Static Verification", "focus": "Compiler checks", "tool": "ec.exe"},
+      {"phase": 4, "name": "Dynamic Verification", "focus": "Runtime contract checking", "tool": "tests"},
+      {"phase": 5, "name": "Iteration", "focus": "Fix violations", "loop": "until verified"}
+    ],
+    "contract_completeness_check": "After writing postcondition, ask: Is this TRUE but INCOMPLETE?",
+    "reference": "D:/prod/reference_docs/claude/verification_process.md"
+  },
+
+  "claude_reference_docs": [
+    {"name": "HATS.md", "path": "D:/prod/reference_docs/claude/HATS.md", "purpose": "Working hat system for focused AI tasks"},
+    {"name": "verification_process.md", "path": "D:/prod/reference_docs/claude/verification_process.md", "purpose": "Meyer's probable-to-provable verification"},
+    {"name": "contract_patterns.md", "path": "D:/prod/reference_docs/claude/contract_patterns.md", "purpose": "DBC patterns for Eiffel"},
+    {"name": "simple_library_design_process.md", "path": "D:/prod/reference_docs/claude/simple_library_design_process.md", "purpose": "7-step library design process"},
+    {"name": "EIFFEL_MENTAL_MODEL.md", "path": "D:/prod/reference_docs/claude/EIFFEL_MENTAL_MODEL.md", "purpose": "Eiffel language mental model"},
+    {"name": "CONTEXT.md", "path": "D:/prod/reference_docs/claude/CONTEXT.md", "purpose": "Session context patterns"},
+    {"name": "mentoring_mode.md", "path": "D:/prod/reference_docs/claude/mentoring_mode.md", "purpose": "Teaching/mentoring patterns"},
+    {"name": "compaction_instructions.md", "path": "D:/prod/reference_docs/claude/compaction_instructions.md", "purpose": "Context compression handling"}
+  ],
+
+  "reference_files": [
+    {"purpose": "Oracle CLI patterns", "path": "D:/prod/simple_oracle/src/oracle_cli.e"},
+    {"purpose": "Oracle schema", "path": "D:/prod/simple_oracle/src/simple_oracle.e:1850-2064"},
+    {"purpose": "AI client interface", "path": "D:/prod/simple_ai_client/src/core/ai_client.e"},
+    {"purpose": "KB Quick facade", "path": "D:/prod/simple_kb/src/kb_quick.e"},
+    {"purpose": "KB Database", "path": "D:/prod/simple_kb/src/kb_database.e"},
+    {"purpose": "TUI application", "path": "D:/prod/simple_tui/src/core/tui_application.e"},
+    {"purpose": "Task AI router", "path": "D:/prod/simple_tui/src/apps/task_manager/ai/task_ai_router.e"},
+    {"purpose": "SQL patterns", "path": "D:/prod/simple_sql/src/simple_sql_database.e"}
+  ],
+
+  "roadmap_0_7_x": {
+    "description": "Multi-pass hat-driven AI orchestration",
+    "vision": "Transform simple_dev from prompt-and-respond into a multi-pass, hat-driven pipeline where dev.exe algorithmically applies expert perspectives (hats) to iteratively refine artifacts",
+    "detailed_plan": "D:/prod/simple_dev/docs/PLAN_0.7.x.md",
+    "added": "2025-12-31",
+
+    "new_data_model": {
+      "turns_table": {
+        "purpose": "Individual AI exchanges with hat context (extends conversations)",
+        "columns": [
+          {"name": "id", "type": "INTEGER PRIMARY KEY"},
+          {"name": "conversation_id", "type": "INTEGER", "foreign_key": "conversations.id"},
+          {"name": "sequence", "type": "INTEGER"},
+          {"name": "role", "type": "TEXT", "values": ["user", "ai", "system"]},
+          {"name": "hat_applied", "type": "TEXT", "note": "Which hat was active for this turn"},
+          {"name": "content", "type": "TEXT"},
+          {"name": "prompt_tokens", "type": "INTEGER"},
+          {"name": "completion_tokens", "type": "INTEGER"},
+          {"name": "created_at", "type": "DATETIME"}
+        ]
+      }
+    },
+
+    "hat_pipeline": {
+      "description": "Artifacts pass through multiple hats with iteration",
+      "implementation_phase_hats": [
+        {"order": 1, "hat": "Feature Hat", "purpose": "Initial code generation"},
+        {"order": 2, "hat": "Contracting Hat", "purpose": "DbC review (aggressive)"},
+        {"order": 3, "hat": "Code Review Hat", "purpose": "Quality review with severity levels"},
+        {"order": 4, "hat": "Security Hat", "purpose": "Security audit"},
+        {"order": 5, "hat": "Testing Hat", "purpose": "Generate tests"}
+      ],
+      "max_iterations_per_hat": 3,
+      "escalation": "After max iterations, present to user with findings"
+    },
+
+    "compile_loop": {
+      "description": "Automated compile error → AI fix → recompile cycle",
+      "max_attempts": 5,
+      "flow": "compile → errors? → AI fix (Contracting Hat) → review → recompile",
+      "escalation": "After 5 failures, present to user with full context"
+    },
+
+    "rollback_triggers": [
+      {"signal": "Compile errors suggest wrong architecture", "rollback_to": "Design"},
+      {"signal": "Test failures reveal spec ambiguity", "rollback_to": "Spec"},
+      {"signal": "Security review finds fundamental flaw", "rollback_to": "Design or Spec"},
+      {"signal": "User feedback: not what I wanted", "rollback_to": "Spec"}
+    ],
+
+    "milestones": {
+      "0.7.0_mvp": [
+        "Contracting Hat applied to implementation",
+        "Compile error → AI fix → recompile loop",
+        "Basic user confirmation points",
+        "Conversation/turn persistence"
+      ],
+      "0.7.1": [
+        "Multi-hat pipeline (Contracting + Code Review)",
+        "Test generation with Testing Hat",
+        "Test failure → fix loop"
+      ],
+      "0.7.2_plus": [
+        "Full hat suite from HATS.md",
+        "Design questions (SCOOP, logging, etc.)",
+        "Rollback support",
+        "kb.db hat definitions"
+      ]
+    },
+
+    "new_classes": [
+      {"name": "DEV_HAT", "file": "src/ai/dev_hat.e", "description": "Hat definition with persona, checklist, phases"},
+      {"name": "DEV_HAT_PIPELINE", "file": "src/ai/dev_hat_pipeline.e", "description": "Multi-hat artifact processing"},
+      {"name": "DEV_COMPILE_LOOP", "file": "src/build/dev_compile_loop.e", "description": "Compile → fix → recompile orchestration"},
+      {"name": "DEV_TURN", "file": "src/core/dev_turn.e", "description": "Individual conversation turn with hat context"},
+      {"name": "DEV_TURN_REPO", "file": "src/database/dev_turn_repo.e", "description": "Turn persistence"}
+    ]
+  }
+}
