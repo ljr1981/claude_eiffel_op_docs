@@ -1,5 +1,18 @@
 # Bug Fixing Workflow: Correcting Known Bugs in Eiffel Code
 
+## CRITICAL: ANTI-SLOP ENFORCEMENT
+
+**Before using this workflow, read: `../ANTI-SLOP-RULES.md`**
+
+This workflow requires ACTUAL:
+- Bug reproduction (compile, run, observe failure)
+- Fix implementation (edit code)
+- Verification (compile, run tests, paste output)
+
+**FORBIDDEN**: Describing what "would happen" without actually doing it.
+
+---
+
 ## Overview
 
 7 sequential prompts for systematically fixing known bugs in an existing Eiffel codebase when the bug is already identified and specified.
@@ -99,3 +112,43 @@ If a test exists but expects wrong behavior, fixing the code will
 | Code malformed | Code → Test |
 | Test absent | Test |
 | Test malformed | Test (and verify code is actually correct) |
+
+## MANDATORY: Execution Steps
+
+At EACH step, Claude Code MUST:
+
+```bash
+# 1. COMPILE (after any code change)
+/d/prod/ec.sh -batch -config {lib}.ecf -target {lib}_tests -c_compile
+
+# 2. RUN TESTS (to verify fix)
+./EIFGENs/{lib}_tests/W_code/{lib}.exe
+
+# 3. PASTE OUTPUT (prove it worked)
+[actual output here, not "expected: ..."]
+```
+
+## Verification Checkpoint Format
+
+After F01 (reproduce), F04 (fix), F05 (verify), F06 (regression), F07 (test):
+
+```markdown
+## VERIFICATION CHECKPOINT
+
+### Command Executed
+```
+[actual command]
+```
+
+### Output
+```
+[PASTE ACTUAL OUTPUT - not a summary]
+```
+
+### Result
+- Bug reproduced: YES/NO
+- Fix successful: YES/NO
+- All tests pass: YES/NO
+```
+
+**If you cannot paste actual output, the step is NOT complete.**

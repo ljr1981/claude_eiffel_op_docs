@@ -1,5 +1,21 @@
 # Eiffel Anti-Slop Prompt Workflow: New Project Creation
 
+## CRITICAL: ANTI-SLOP ENFORCEMENT
+
+**Before using this workflow, read: `../ANTI-SLOP-RULES.md`**
+
+This workflow requires ACTUAL:
+- File creation (using Write/Edit tools)
+- Compilation at each phase (using ec.sh)
+- Test execution (running the actual test exe)
+
+**FORBIDDEN**:
+- Describing code without writing it
+- Saying "would compile" without compiling
+- Claiming tests pass without running them
+
+---
+
 ## Overview
 
 10 sequential prompts implementing the "CAN" methodology from EIFFEL-ANTIDOTE-TO-AI-SLOP.md. Each prompt is designed for AI execution within an Eiffel project context.
@@ -143,3 +159,52 @@ Execute prompts in order. Each prompt specifies:
 - **Rules**: Constraints on AI behavior
 - **Success Criteria**: When to proceed
 - **Next Step**: Which prompt follows
+
+## MANDATORY: Compilation Gates
+
+**After Steps 02, 05, 06, 07**:
+
+```bash
+# COMPILE (mandatory before proceeding)
+/d/prod/ec.sh -batch -config {lib}.ecf -target {lib}_tests -c_compile
+
+# Verify output shows:
+# "System Recompiled." = proceed
+# Any errors = fix before continuing
+```
+
+**After Step 09**:
+
+```bash
+# RUN TESTS (mandatory before proceeding)
+./EIFGENs/{lib}_tests/W_code/{lib}.exe
+
+# Verify output shows:
+# "ALL TESTS PASSED" = proceed
+# Any failures = fix before continuing
+```
+
+## Verification Checkpoint Format
+
+After each compilation/test gate:
+
+```markdown
+## VERIFICATION CHECKPOINT - Step [N]
+
+### Compilation
+```
+[PASTE ACTUAL ec.sh OUTPUT]
+```
+
+### Test Execution (if applicable)
+```
+[PASTE ACTUAL test output]
+```
+
+### Status
+- Compiles: YES/NO
+- Tests pass: [N]/[M]
+- Ready to proceed: YES/NO
+```
+
+**If you cannot paste actual output, the step is NOT complete.**

@@ -1,5 +1,21 @@
 # Bug Hunting Workflow: Finding Unknown Bugs in Eiffel Code
 
+## CRITICAL: ANTI-SLOP ENFORCEMENT
+
+**Before using this workflow, read: `../ANTI-SLOP-RULES.md`**
+
+This workflow requires ACTUAL:
+- Code reading (using Read tool, not imagination)
+- Test writing and execution (compile, run, paste output)
+- Bug reproduction (actual failing test case)
+
+**FORBIDDEN**:
+- Claiming "this code might have bugs" without evidence
+- Writing tests without compiling and running them
+- Documenting bugs without actual reproduction
+
+---
+
 ## Overview
 
 8 sequential prompts for systematically hunting bugs in an existing Eiffel codebase when you don't know what's wrong—proactive defect detection.
@@ -116,3 +132,53 @@ spec says X, contract says Y, code does Z, test expects W.
 | Contract | No require/ensure/invariant | Wrong semantics for feature |
 | Code | (Missing feature) | Violates domain rules |
 | Test | No coverage | Wrong expectations |
+
+## MANDATORY: Execution Gates
+
+**H06 (Construct Exploit) MUST include**:
+
+```bash
+# 1. Write the test file
+[Edit/Write tool]
+
+# 2. COMPILE
+/d/prod/ec.sh -batch -config {lib}.ecf -target {lib}_tests -c_compile
+
+# 3. RUN and observe failure
+./EIFGENs/{lib}_tests/W_code/{lib}.exe
+
+# 4. PASTE ACTUAL OUTPUT showing the bug
+```
+
+**H08 (Document Finding) is ONLY valid if**:
+- Actual test code exists in `testing/` folder
+- Actual compilation output pasted
+- Actual test failure output pasted
+
+## Verification Checkpoint Format
+
+After H06, H07, H08:
+
+```markdown
+## BUG VERIFICATION - [Bug Description]
+
+### Exploit Test
+```eiffel
+[ACTUAL test code that triggers the bug]
+```
+
+### Compilation
+```
+[PASTE ACTUAL ec.sh OUTPUT]
+```
+
+### Execution
+```
+[PASTE ACTUAL test output showing failure]
+```
+
+### Bug Confirmed: YES/NO
+### Root Layer: [Spec|Contract|Code|Test]
+```
+
+**If you cannot paste actual test failure, the bug is NOT confirmed.**

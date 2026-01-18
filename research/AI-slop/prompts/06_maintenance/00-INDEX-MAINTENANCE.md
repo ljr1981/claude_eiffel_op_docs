@@ -1,5 +1,22 @@
 # Maintenance Workflow: Improving Pre-Existing Eiffel Code
 
+## CRITICAL: ANTI-SLOP ENFORCEMENT
+
+**Before using this workflow, read: `../ANTI-SLOP-RULES.md`**
+
+This workflow requires ACTUAL:
+- Code reading (using Read tool for audit)
+- Code modification (using Edit tool for strengthening)
+- Compilation after each modification
+- Test execution to verify changes
+
+**FORBIDDEN**:
+- Claiming code "needs improvement" without reading it
+- Suggesting contract changes without implementing them
+- Documenting improvements without compiling and testing
+
+---
+
 ## Overview
 
 10 sequential prompts for systematically improving an existing Eiffel codebase by auditing and strengthening all layers: specifications, contracts, code, and tests.
@@ -95,3 +112,57 @@ Code that "worked" but violates new specs/contracts/tests was always broken.
 
 **Malformed artifacts are worse than absent ones.**
 Absent spec = no guidance. Malformed spec = wrong guidance.
+
+## MANDATORY: Execution Gates
+
+**After M01-M04 (Audit Phase)**:
+- Read actual source files (paste file paths read)
+- Document audit findings with line numbers
+
+**After M05-M06 (Strengthen Phase)**:
+
+```bash
+# After EACH modification:
+/d/prod/ec.sh -batch -config {lib}.ecf -target {lib}_tests -c_compile
+
+# Verify:
+# "System Recompiled." = change successful
+# Any errors = fix before proceeding
+```
+
+**M07 (Compile Validate) and M08 (Test) are verification gates**:
+
+```bash
+# M07: Full compile
+/d/prod/ec.sh -batch -config {lib}.ecf -target {lib}_tests -c_compile
+
+# M08: Run all tests
+./EIFGENs/{lib}_tests/W_code/{lib}.exe
+```
+
+## Verification Checkpoint Format
+
+After M05, M06, M07, M08:
+
+```markdown
+## MAINTENANCE CHECKPOINT - Step M[N]
+
+### Changes Made
+- [file:line] - [description of change]
+
+### Compilation
+```
+[PASTE ACTUAL ec.sh OUTPUT]
+```
+
+### Test Results (M08 only)
+```
+[PASTE ACTUAL test output]
+```
+
+### Status
+- Compiles: YES/NO
+- Tests pass: [N]/[M]
+```
+
+**If you cannot paste actual output, the step is NOT complete.**
