@@ -299,3 +299,5 @@ For {users} who need {solution}, our {product} provides {value} unlike {alternat
 
 ## Next Step
 → 7S-06-RISKS.md
+
+CRITICAL: STOP here and tell me what the next step is and prompt me to tell you to continue with my added instruction.

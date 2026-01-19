@@ -296,3 +296,5 @@ OUTPUT FORMAT:
 
 ## Next Step
 → 7S-03-REQUIREMENTS.md
+
+CRITICAL: STOP here and tell me what the next step is and prompt me to tell you to continue with my added instruction.

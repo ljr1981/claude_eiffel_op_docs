@@ -214,3 +214,5 @@ research-output/
 | **Total** | **12-24 hours** | Spread over days recommended |
 
 The investment saves multiples of this time by avoiding wrong paths.
+
+CRITICAL: STOP here and tell me what the next step is and prompt me to tell you to continue with my added instruction.

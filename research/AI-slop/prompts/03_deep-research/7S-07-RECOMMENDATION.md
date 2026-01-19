@@ -343,3 +343,5 @@ If DEFER recommended:
 
 If ABANDON recommended:
 → Document learnings for future reference
+
+CRITICAL: STOP here and tell me what the next step is and prompt me to tell you to continue with my added instruction.

@@ -212,7 +212,7 @@ naming-review/
 
 - Run **AFTER** void-safety fixes (code must compile first)
 - Run **BEFORE** design-audit (clean naming aids analysis)
-- Run **BEFORE** github_prep (public code should be clean)
+- Run **BEFORE** github-prep (workflow 11) (public code should be clean)
 
 ## Metrics Tracked
 
