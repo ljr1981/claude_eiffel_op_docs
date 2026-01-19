@@ -32,9 +32,10 @@ Create README.md following the Simple Eiffel ecosystem standard pattern.
 ## Status
 
 ✅ **Production Ready** — {version}
-- {N} classes, {M} features
-- {X} tests passing
-- Full Design by Contract coverage
+- {N} classes
+- **{TOTAL} tests total**
+  - {X} internal (DBC contract assertions)
+  - {Y} external (AutoTest unit tests)
 
 ## Overview
 
@@ -116,7 +117,7 @@ Part of the [Simple Eiffel](https://github.com/simple-eiffel) ecosystem.
 - [ ] Links (Documentation, GitHub)
 - [ ] Badges (License, Eiffel version, DBC)
 - [ ] One-line description with ecosystem link
-- [ ] Status section with metrics
+- [ ] Status section with test counts (internal DBC + external AutoTest = total)
 - [ ] Overview (2-3 paragraphs)
 - [ ] Quick Start code example
 - [ ] API Reference tables for each public class
@@ -125,6 +126,20 @@ Part of the [Simple Eiffel](https://github.com/simple-eiffel) ecosystem.
 - [ ] Dependencies table
 - [ ] License section
 - [ ] Footer with ecosystem link
+
+## Test Count Requirements
+
+The Status section requires both internal and external test counts:
+
+- **Internal tests (DBC)**: Count contract assertion tags in require/ensure/invariant blocks
+  ```bash
+  # Count contract assertions in src/
+  grep -rE "_exists:|_valid:|non_negative:|positive_|valid_|at_least|correct_|same_|empty:|result_|count_" src/ --include="*.e" | wc -l
+  ```
+- **External tests (AutoTest)**: Count from test runner output
+- **Total**: Internal + External
+
+This framing shows that DBC contracts ARE tests (internal, code-level), while AutoTest provides external validation that exercises those contracts.
 
 ## Logo Requirements
 
