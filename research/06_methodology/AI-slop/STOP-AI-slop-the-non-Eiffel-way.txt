@@ -1,0 +1,29 @@
+### Best Practices to Avoid AI Slop in Code Generation
+
+AI slop in code—characterized by superficially functional but buggy, inefficient, or insecure outputs—can be mitigated through disciplined processes, better prompting, and rigorous oversight. Based on insights from developers, industry blogs, and community discussions, here are key best practices. These emphasize human-AI collaboration rather than blind reliance, helping ensure high-quality, maintainable code.
+
+1. **Craft Precise and Structured Prompts**  
+   Start with clear, detailed instructions to guide the AI effectively. Break tasks into smaller sections, use explicit component names, define actions step-by-step, and specify the tech stack or constraints (e.g., "Use Python 3.12 with NumPy for data processing, avoid deprecated functions"). This reduces ambiguity and prevents generic, bloated outputs. Optimize prompts iteratively—test and refine them to align with your style. For complex tasks, prompt the AI to act as a "senior engineer" following best practices in your language or framework.
+
+2. **Begin with Planning and Research**  
+   Have the AI generate a detailed plan before coding: research the codebase, ask clarifying questions, and outline steps. Review and approve this plan to catch issues early. This avoids rushed "slop" by ensuring alignment with project goals and architecture. Tools like agent modes in editors (e.g., Cursor) can facilitate this, turning vague ideas into structured implementations.
+
+3. **Manage Context and Rules Effectively**  
+   Provide relevant context without overload—let the AI search for files or reference past chats instead of dumping everything. Use persistent "rules" files (e.g., in .cursor/rules/) to enforce project-specific styles, best practices, API docs, and testing guidelines. This keeps outputs consistent and reduces errors from missing details. Avoid including irrelevant or edge-case info to prevent confusion.
+
+4. **Implement Test-Driven Development (TDD) and Iteration**  
+   Instruct the AI to write failing tests first, then code to pass them, iterating until success without altering tests. This enforces verifiable goals and catches bugs early. For debugging, use modes that generate hypotheses, add logging, and fix based on evidence, especially for tricky issues like race conditions. Iterate in focused sessions, starting new conversations for task switches to reset context.
+
+5. **Enforce Thorough Reviews and Quality Gates**  
+   Always review AI-generated code manually or via automated tools—don't ship unchecked outputs. Use peer reviews, linters, and agent-based reviews to analyze changes, generate diagrams, and identify flaws. Establish team quality gates (e.g., no merges without tests passing) to block slop. Take ownership: understand and refactor the code as if you wrote it.
+
+6. **Leverage Framework Guidelines and Simplify Codebases**  
+   Reference official best practices from languages or frameworks (e.g., Laravel guidelines) in prompts to produce clean, non-sloppy code. Keep codebases simple (e.g., basic PHP/JS without over-complexity) to minimize AI errors, as simpler structures align better with training data. Use AI for repetitive tasks like normalization or refactoring to maintain standards.
+
+7. **Automate Workflows and Feedback Loops**  
+   Create custom commands or hooks for multi-step processes (e.g., commit, test, PR). Integrate self-policing prompts for quick feedback on outputs, similar to quality checks in content pipelines. This saves time and improves quality over iterations, reserving human effort for high-impact reviews.
+
+8. **Balance Speed with Quality**  
+   Treat velocity and robustness as intertwined—don't sacrifice one for the other. Focus on fixing existing code quality issues rather than just generating more. Use AI for grunt work (e.g., docs, initial drafts) but polish the final 20% yourself to test ideas faster without slop.
+
+Adopting these practices shifts AI from a slop generator to a productivity booster. As tools evolve, staying updated (e.g., via blogs like Cursor's) helps refine your approach. Remember, the root cause is often human oversight, not AI limitations—invest in skills like prompting and review to maximize benefits.
