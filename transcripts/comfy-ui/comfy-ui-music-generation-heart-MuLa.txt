@@ -1,0 +1,950 @@
+0:00
+Hey guys, what is up? Welcome back. I am
+0:03
+back in the office. Hope everyone's had
+0:07
+a wonderful holiday season. It's been
+0:10
+very productive for me, man. I swear I
+0:14
+can't stop doing this stuff for a
+0:16
+minute. Things just keep rolling. So
+0:18
+many cool stuff to play with, build,
+0:21
+show. I have been really addicted to
+0:24
+audio diffusion. I don't know why. Maybe
+0:27
+it was because I've just been focusing
+0:29
+on image and video for so long now, but
+0:32
+audio stuff has been really satisfying.
+0:34
+I'm calling it right now 2026 is going
+0:38
+to be the year of open-source music
+0:41
+generation.
+0:43
+So today we are going to talk about a
+0:47
+new image sorry a new audio music model
+0:52
+that came out and it is called heart
+0:56
+moola. So this is heart moola. It is a
+0:59
+three billion parameter auto reggressive
+1:02
+music generation model. It looks like it
+1:05
+can do English, Chinese, Korean, and
+1:08
+Spanish multilingual. A pretty solid
+1:11
+codec. I think it's at 44 kHz. We have
+1:16
+whisper and lyric transcription. It's
+1:19
+really solid. Listen, let me zoom in
+1:20
+here. They're touting some pretty big,
+1:24
+what's the word? questionable results.
+1:27
+But look at this graph now. I think
+1:30
+there's two versions. There's three
+1:32
+billion parameter and there's 7 billion.
+1:34
+I think this graph is for the 7 billion
+1:36
+parameter model. There's no way. Like
+1:38
+look at that. If we scroll down here,
+1:40
+this is almost on par with 5, guys. So 5
+1:44
+is kind of gas. It's like really really
+1:47
+I don't think the 3 billion parameter
+1:50
+model is quite there. I've been playing
+1:51
+with it, but the 3 billion parameter
+1:54
+model is incredibly capable. And the 7
+1:58
+billion parameter model uh is apparently
+2:01
+around the corner. If we go right here,
+2:04
+yeah, look at this. Achieves comparable
+2:05
+now. That's a huge claim. Sick. Because
+2:08
+this is open source and training scripts
+2:10
+are coming. I've been talking with
+2:12
+Ostrus. him and I have been scheming
+2:15
+eyeing up this model and he's already
+2:18
+working on training scripts to get it
+2:19
+into AI toolkit. I'm super stoked on
+2:22
+that. So definitely keep in keep stay in
+2:26
+tuned for that's going to be really
+2:27
+really fun training music into these
+2:30
+models. So uh in the to-dos here on the
+2:33
+official repo, it does look like the 7
+2:35
+billion is coming. The thing can
+2:37
+actually support reference audio. It
+2:39
+does not currently. It's a it's a subm
+2:42
+module model. Think of like IP adapter
+2:45
+that like so that's coming. Um and you
+2:49
+know all the generations and looks like
+2:50
+acceleration streaming you know uh etc.
+2:54
+like that almost time vibe. Um and then
+2:57
+of course all this that we're like used
+2:58
+to in these models right tags almost
+3:01
+like descriptors you know um temperature
+3:04
+top K. This is a regressive model. So if
+3:06
+you don't know what that means, uh most
+3:09
+diffusion models are basically all at
+3:12
+once. So what that means is like the
+3:15
+beginning of the uh video um beginning
+3:18
+of the video and the end of the video
+3:20
+are literally rendered at the same time.
+3:21
+So everything is kind of like in
+3:24
+perspective at the same with an auto
+3:25
+reggressive model. It's uh it's always
+3:28
+like the next token basically. So like
+3:32
+GPT, right? It's to uh the next token.
+3:35
+And so it's a very linear fashion than
+3:37
+it is like all at once basically. Um,
+3:39
+and that's like pretty standard fees
+3:41
+kind of, but that does open up the doors
+3:43
+for, you know, if uh if you do get your
+3:46
+code and start to build software away
+3:49
+from comfy comfy UI for with the model.
+3:51
+Um, when you hit go and it's done
+3:54
+rendering, you can technically already
+3:56
+listen to half of the song. Like you can
+3:58
+listen to it as like buffering basically
+4:00
+and rendering the song, right? These are
+4:02
+auto reggressive. Um, so let's jump back
+4:05
+in here. So yeah, guys, I've already
+4:09
+wrapped this in. I just couldn't wait. I
+4:11
+just had to get my hands on this and and
+4:13
+play with this. I'm stoked for this the
+4:15
+audio diffusion revolution. Um open
+4:19
+source audio, you know, like and all the
+4:21
+went down. The music industry is not
+4:23
+ready. They're not ready for this flood
+4:26
+because the community is going to hit
+4:28
+hard as they always do and we are going
+4:31
+to see a new renaissance of music. Um,
+4:34
+and audio has been lagging for a very
+4:37
+long time in the space. So, I'm stoked.
+4:39
+All right, let's go over the thing.
+4:42
+So, we have starting from the left, we
+4:46
+have the model loader, right? We have
+4:48
+the 7B here. It's kind of small. Yeah,
+4:50
+we have the 7B right here. If you select
+4:53
+that and run, you get an error basically
+4:55
+coming soon. I'm going to be
+4:56
+implementing this and keeping up to date
+4:58
+with this repo. Um, so if and when it
+5:01
+drops and I haven't added it, ping me,
+5:04
+tag me, comment, you know, do the thing,
+5:07
+get my attention. Below that, we have a
+5:08
+tags builder. Now, this is basically
+5:11
+really simple. It's just going to output
+5:13
+a string. There's some tokenization
+5:15
+stuff, so it's not just a string
+5:17
+basically. Um, actually, I think that
+5:20
+happens into the in the conditioning
+5:21
+node, but basically we can select the
+5:24
+genre. So, in this case, disco. Uh the
+5:26
+vocal type which uh I'm just setting I'm
+5:29
+going to set actually let's set female
+5:31
+vocal mood I'm going to do uh dreamy
+5:36
+tempo fast synth base deep the addition
+5:39
+this is additional tags and instruments
+5:40
+at the bottom here I have yet to have
+5:43
+like good results on this but you uh we
+5:47
+will see cfg the from the uh official
+5:50
+code is one so I'm just going to leave
+5:52
+it there for now the max duration of the
+5:54
+model is 240 seconds. That's 4 minutes.
+5:58
+That's a long that's a long render. Of
+6:00
+course, the language model things
+6:02
+temperature top K seed. Now, temperature
+6:06
+um is a uh an interesting um fill in.
+6:10
+And we're going to image.
+6:13
+Actually, we're just going to preview
+6:14
+this. I'm going to turn all of this off.
+6:16
+Hit go. And then we're going to copy
+6:18
+this image. And then going to go into
+6:20
+load image. Paste it in here. and all
+6:22
+that to say that way that um the way
+6:26
+that uh temperature works. Let me put
+6:29
+the thickness down. There we go. Nice.
+6:32
+Brush red. Cool. Is uh we have
+6:36
+essentially Where's my hardness? My god,
+6:38
+I'm so sorry, guys. Okay, beautiful.
+6:41
+Okay, so we have this curve and this is
+6:44
+uh essentially probability. Okay, this
+6:47
+is the probable everything in everything
+6:51
+inside of the um the curve here is
+6:55
+probable. And so this is what they mean
+6:58
+by like the average generalization so to
+7:02
+speak. And so the idea here is that when
+7:05
+you prompt your prompt has a like say
+7:10
+like female pops electronic there's tons
+7:14
+options that that that thing could land
+7:17
+in it lands somewhere in this range
+7:21
+right now when we tighten or lower when
+7:26
+we taking that curve and we're
+7:27
+tightening it right we're making it more
+7:29
+narrow and and more like sharp And
+7:32
+basically that what's doing is it's
+7:34
+probabilistic
+7:35
+outcome and shrinking it to being the
+7:39
+most probable outcomes. Right? When we
+7:43
+raise the temperature, it's a little
+7:45
+more loosey goosey and the and the curve
+7:47
+get wider and essentially what happens
+7:49
+is there's more opportunity for us to
+7:52
+land somewhere in that range of larger
+7:55
+probability, right? And this happens
+7:58
+every single time a token is generated.
+8:02
+And so you get weirder results, you get
+8:04
+more creative results, and you get uh
+8:07
+more improbable randomness, so to speak.
+8:10
+But this could be good if this is like
+8:12
+ultimately what you want. So that one
+8:15
+I'm going to set this back to 120 for a
+8:17
+2 minute. Um top K is again another
+8:21
+parameter focused. If you just hover
+8:23
+over them, it kind of says focus is more
+8:25
+lower is focused and consistent. Higher
+8:27
+is a little more chaotic. Again, play
+8:29
+with these to taste. That paired with
+8:32
+the CFG can get you some really
+8:34
+interesting results. Um, and then the
+8:36
+final piece of the puzzle is we have
+8:38
+this conditioning uh node in the middle
+8:40
+where you prompts. Now, you notice here
+8:42
+that I have a little button. This has
+8:44
+kind of been like my trend. Click on
+8:45
+this. A popup happens and this gives us
+8:48
+the ability to write the lyrics. So, I'm
+8:50
+going to maybe do like an intro and it
+8:53
+just intros out and then I'm going to do
+8:56
+maybe um an instrumental then verse one
+8:59
+and I'll be like um hey, I'm going to
+9:02
+use my
+9:04
+Hey, sitting at the beach. That's what
+9:06
+they say. Looking at the waves, watching
+9:09
+them sway, you know, something silly
+9:11
+like that. Then do a pre chorus. Yeah.
+9:14
+Yeah. Watch me now. Eating the grass.
+9:17
+Call me a cow. Guys, I'm really not a
+9:19
+songwriter. I'm so sorry. Chorus. Booya.
+9:22
+Booya. Shakala. And and then we're gonna
+9:27
+do intro. So yeah, we can easily
+9:30
+construct like a song here. We're going
+9:32
+to say lyrics. And uh yeah, they just
+9:35
+like happen to. So hit go on the whole
+9:38
+thing. The model should autod download.
+9:40
+The first time um it goes into your
+9:43
+comfy models part moola as a folder
+9:46
+name. So that's where it's all being
+9:48
+downloaded if you want if you want want
+9:50
+to delete keep track of your models.
+9:52
+Hard drive space is precious. And uh
+9:54
+we're inferencing. So let's like take a
+9:56
+look at my VRAM. I am using about 22 GB
+10:01
+of VRAM right now. Let's see
+10:04
+performance. Yes, I'm using 20.9
+10:07
+Oh, it's sorry I'm hiding it. 20.9 GB of
+10:11
+VRAM right now. Um pretty pretty solid.
+10:15
+This this should a lot than this with
+10:17
+company's offloading. Of course, I'm
+10:19
+running 95 96 GB H600 uh A6000 Pro. So,
+10:24
+it's just insane amount of VRAM. But
+10:26
+this is uh quite fast for what it is.
+10:29
+Like the console. Yeah, I'm getting
+10:31
+about 13 12 13 second. Um like just just
+10:38
+over about real it's almost one to one,
+10:40
+right? like as this the repo said just
+10:43
+about to one in terms of the time it
+10:45
+took to render versus the time of
+10:48
+listening basically. So looks like we're
+10:51
+about to finish here. All right, now
+10:53
+we're decoding. All right, guys. Moment
+10:55
+of truth. Let's let's listen to this.
+10:58
+Turn on my stop audio.
+11:05
+They say looking at the waves, watching
+11:08
+them sway. Yeah. Yeah.
+11:23
+That's absolutely terrible. But we did
+11:26
+not do justice here on the lyrics. So,
+11:29
+you know what? Let's let's fire up our
+11:31
+buddy claw and you know actually give a
+11:35
+basically go to the repo here. I'm going
+11:37
+to zoom out a little bit. They have a a
+11:39
+little template. I'm going to copy that.
+11:41
+Actually, I think I have a I'm just
+11:44
+going to paste it and say um oops you
+11:47
+chat write me new variation of this song
+11:50
+following this structure
+11:52
+about a woman who has anxiety. She's
+11:56
+always overthinking. Let's see what's
+11:58
+going on. All right, cool. So, I'm not a
+12:02
+creative writer. Maybe you are. I'm just
+12:05
+not. So, we're going to load this up and
+12:07
+we're gonna come back in a minute. See
+12:09
+how good see how well it did. All right,
+12:12
+we back. We decoding. Tekken times a
+12:15
+charm. Let's give it a listen. Her eyes
+12:18
+open.
+12:26
+The silence hums but her head.
+12:31
+A thousand voices for one.
+12:36
+The thoughts keep
+12:40
+her heart.
+12:46
+She's searching for some solid ground.
+12:51
+Every day the wor
+12:58
+she keeps on smiling through the haze.
+13:01
+Tangled in a quiet maze. It is the
+13:04
+weight she carries through her day. She
+13:09
+reads the text a dozen times
+13:13
+looking for between the lines. Did she
+13:18
+say too much or not?
+13:23
+Why does simple feel so rough
+13:29
+weakness?
+13:33
+All right, not bad. I think I'm going to
+13:36
+bump up the CFG a little bit. I'm going
+13:38
+to set this to 60 just so we can get
+13:40
+some faster renders going here. Maybe
+13:45
+I'm going to I'm going to set it to
+13:46
+choir. I want to see what happens. Uh
+13:49
+energetic tempo fast.
+13:53
+again. See what I mean? I don't know if
+13:54
+these additional tags are even doing
+13:56
+anything. Instruments. How about flutes?
+13:59
+I don't know. Something unique we can
+14:01
+random seed. Same uh lyrics. We're going
+14:03
+to let it cook. Should be much quicker
+14:06
+now. 60 seconds. It's ripping. All
+14:09
+right, let's see what we got.
+14:17
+wonderids.
+14:35
+It's definitely doing the thing. I
+14:36
+really want to try to move away from
+14:39
+this whole EDM. Maybe just no tags. No,
+14:42
+we do need tags. Let's write them
+14:45
+manually. EDM, house, beats, thick
+14:49
+drums, bass, and then on the lyrics, I'm
+14:53
+literally going to do just instrumental.
+14:55
+And we're going to let it rip. I don't
+14:58
+know what this is going to do. We're
+15:00
+experimenting out here. That's the whole
+15:02
+point, really. All right, let's see
+15:04
+what's up.
+15:07
+I swear I was having better results when
+15:09
+I wasn't on YouTube. But one thing I've
+15:14
+noticed is I don't think these models,
+15:17
+vocal type, instrumental,
+15:19
+energetic, fast. Let's do aggressive,
+15:23
+secondary, electronic. I don't think I'm
+15:27
+set it to 30. I don't think these models
+15:30
+are designed to not do lyrics. This is
+15:33
+one thing that I really hope that when
+15:35
+we get full model training on this
+15:38
+model, specifically Laura's tuning and
+15:40
+stuff like that. I know Austri is
+15:42
+working on it. I've been I've been in
+15:44
+talks with them. But I want to tune this
+15:47
+thing on instrumentals. I personally
+15:49
+don't care about lyrics. However, most
+15:51
+people do, but it's like the model's
+15:55
+ability to not do them and suffering is
+15:58
+uh could easily be tuned out in probably
+16:01
+an hour.
+16:05
+Okay. What if I just did what if I did
+16:08
+chorus instrumental instrument just
+16:10
+absolute skitso prompting? See what
+16:12
+happens. It's only 30 seconds. So it's
+16:16
+the other thing too about the auto
+16:17
+reggressive nature is if you've noticed
+16:20
+it's just wants to do the intros because
+16:22
+I'm not giving it enough tokens to get
+16:25
+to the meat of the song. Basically, this
+16:27
+is where the audio space is so
+16:29
+interesting. There's so many things we
+16:31
+can train these models to do. New genres
+16:34
+are definitely going to be invented with
+16:36
+this kind of music.
+16:40
+I'm gonna let that one cook for two
+16:41
+minutes. I want to hear that one. Let's
+16:43
+see. Are you guys ready? Let's hit it.
+16:46
+Nice sizzle.
+16:55
+D.
+17:15
+What part do you think we're at right
+17:17
+now?
+17:19
+You know what? All things considered,
+17:21
+that was pretty solid. I'm chilling with
+17:23
+that. considering it was just absolute
+17:25
+nonsense. Let's make another song, but
+17:28
+this time let's make it be funk soul
+17:31
+upbeat at that prompt. We'll come back
+17:34
+to here. We're going to set this to funk
+17:38
+male uplifting
+17:41
+fast. And this one will also be disco.
+17:44
+And then we're going to come back and
+17:45
+get this intro. Boom. Paste it there. 2
+17:50
+minutes. We're going to hit it.
+17:53
+Decoding moment of truth. Let's look at
+17:55
+the lyrics for a second. She woke up
+17:57
+this morning, mind already running wild,
+17:59
+thinking about that thing she said back
+18:01
+when she was a child. But the baseline's
+18:03
+dropping and the groom's feeling right.
+18:05
+Maybe she can shake it off and dance
+18:07
+away the night. I'm ready for this. Here
+18:09
+we go. Oh, buddy. I'm in. This one's the
+18:12
+best so far.
+18:18
+that she
+18:23
+basow
+18:46
+the music you down That funky street
+18:50
+oversiz.
+19:08
+So, one thing I'm noticing is the
+19:10
+structuring of this obviously is
+19:12
+dictated by the length of the lyrics.
+19:14
+So, if that's the case, let's
+19:17
+restructure this song and follow the
+19:20
+song structure of Bruno Mars's 24 Karat
+19:24
+Magic. So, the idea here is 24 Karat
+19:27
+Magic. I counted once. I love music. I'm
+19:29
+a I'm a music producer. I counted once.
+19:32
+I think the chorus, we're going to find
+19:34
+out. I'm pretty sure the chorus plays
+19:36
+like 20 or no, not 20. It's like
+19:40
+literally seven or eight times in 24
+19:42
+Karat Magic. Let's make this a super
+19:44
+catchy pop song. The chorus should play
+19:46
+much earlier than it does and it should
+19:48
+play multiple times throughout the
+19:50
+track. Get this just right so that now
+19:54
+we're talking much better. Let's try
+19:57
+running this. I have one cooking
+19:58
+already. It's just about to decode. This
+20:00
+is the same prompt as before, but it's a
+20:03
+different seed. And I'm going to queue
+20:04
+up this next one as we listen to it.
+20:06
+This one just went like full country
+20:09
+rock or something.
+20:11
+running
+20:16
+through the painks.
+20:41
+are blasting and there ain't no space
+20:43
+for gloom. Her thoughts are spinning but
+20:45
+her hips are spinning. When the funk
+20:48
+takes oversisperve
+21:05
+now the main takeaway here guys is this
+21:09
+model specifically all all of these
+21:11
+music models right let's be realistic
+21:13
+here no one is in their right mind a
+21:16
+research lab specifically
+21:18
+is going to risk lawsuit from these big
+21:21
+music companies. So obviously these
+21:24
+music models quote unquote suck,
+21:28
+but I'm not worried about that. What we
+21:30
+need is a good foundational architecture
+21:33
+to then fine-tune our own music without
+21:38
+repercussion and all this, sorry, fear
+21:41
+of lawsuit. We just need a solid
+21:43
+architecture to then throw real music at
+21:47
+it because all this stuff is trained off
+21:49
+of essentially the equivalent of clip
+21:50
+art. Just like free royalty free music
+21:53
+that honestly is ass. So obviously it
+21:56
+reflects in the music quality. Let's
+21:59
+listen to this one last one.
+22:10
+No more overthinking. Got the whole room
+22:13
+blinking. We going to ride this groove
+22:15
+until the morning.
+22:18
+She got a million tabs open in her mind.
+22:25
+199
+22:33
+matters the groove in you and me.
+22:36
+Get out of your head now
+22:39
+instead
+22:42
+going to set you free tonight. No more
+22:44
+overthinking.
+22:48
+We going this morning.
+22:53
+used to stay up stressing about
+22:55
+the past, but when
+22:58
+heavy
+23:00
+fades out fast. So overall guys, my main
+23:03
+takeaway, this is a amazing start. We're
+23:06
+literally what not even 20 days into
+23:11
+2026 and we're already seeing the music
+23:14
+wave, this open source wave of music
+23:17
+models start to hit. So, I'm hella
+23:20
+stoked and this is the first of many.
+23:23
+Again, 7 billion parameter model coming.
+23:26
+Laura training currently in the works.
+23:28
+Ostress is playing with the node right
+23:31
+now. Um,
+23:33
+it's just the beginning, guys. So, get
+23:36
+get a hold of the node pack. Again, you
+23:38
+can find it in the custom node manager
+23:41
+uh under FL Hartimula. Links in the
+23:44
+description if not. Um, and yeah, so
+23:48
+much for watching. Uh, I'm going to be
+23:50
+cranking out a lot more videos. A lot of
+23:52
+cool audio stuff I've been coding. Um,
+23:55
+want to do some videos on voice
+23:57
+transcription. Um, more stuff on a lot
+24:00
+of the video models that have come out,
+24:01
+LTX included, um, animate diff videos.
+24:05
+If you like what you guys have seen and
+24:08
+want to learn more, definitely follow me
+24:10
+on Patreon. Drop me a subscribe. Every
+24:13
+little bit helps. I am here to shed the
+24:16
+knowledge and shed the love because
+24:19
+guys, we are liberated with all this
+24:22
+tech and it is so exciting and I want
+24:24
+you guys to be stoked, too. So, thanks
+24:26
+so much for watching and I'll catch you
+24:28
+guys in the next
