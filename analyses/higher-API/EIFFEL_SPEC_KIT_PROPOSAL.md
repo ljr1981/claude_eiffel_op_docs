@@ -537,23 +537,20 @@ The prose MML in approach.md is a "draft" of the thinking. The adversarial AI ca
 - Capacity = 0 (degenerate case—always evict?)
 ```
 
-**Adversarial Review of Sketch (Step 2c)**
+**Progressive Chain Reviews Sketch (Step 2c)**
 
-The adversarial AI sees BOTH the contracts AND the approach:
+The full AI chain (Ollama → Claude → Grok → Gemini) reviews BOTH contracts AND approach.md:
 
 ```
-Adversarial AI asks:
-1. Your sketch says "O(1) average" but MML postcondition iterates
-   all keys for keys_model—that's O(n). Is this acceptable for
-   contract checking, or do you need a faster model?
+$ simple_ai_client review-chain src/ approach.md --output synopsis.md
 
-2. Edge case "Capacity = 0" isn't addressed in preconditions.
-   Should `require capacity > 0` be added to make?
+Chain findings (accumulated):
+  Ollama: "Precondition missing: capacity > 0 not required"
+  Claude: "O(1) claim in sketch vs O(n) MML postcondition—mismatch"
+  Grok:   "LRU ordering not in contracts but sketch assumes it"
+  Gemini: "SCOOP: put during iteration is undefined"
 
-3. The sketch mentions "doubly-linked list" but contracts don't
-   specify LRU ordering preservation. Add postcondition?
-
-4. What happens if put is called during iteration? SCOOP-safe?
+Human synopsis: 4 issues, all MUST FIX before implementation.
 ```
 
 This catches architectural issues BEFORE writing real code.
@@ -569,6 +566,10 @@ This catches architectural issues BEFORE writing real code.
 │  RISK: Task list becomes stale as implementation reveals        │
 │  unforeseen complexity. Nobody updates tasks.md. It becomes     │
 │  a historical artifact, not a living document.                  │
+│                                                                 │
+│  MITIGATION: AI chain reviews tasks.md for completeness.        │
+│  "Task 3 doesn't cover the LRU eviction mentioned in approach." │
+│  Human approves task list AFTER chain review.                   │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -580,9 +581,14 @@ This catches architectural issues BEFORE writing real code.
 │  Source: Anti-Slop 06-07                                        │
 │                                                                 │
 │  RISK: AI modifies contracts anyway when implementation is      │
-│  hard. "I need to weaken this precondition to make it work."   │
+│  hard. "I need to weaken this precondition to make it work."    │
 │  Human allows it because fighting the AI is exhausting.         │
 │  Contract-first becomes contract-when-convenient.               │
+│                                                                 │
+│  MITIGATION: simple_ai_client diff-contracts detects changes.   │
+│  "WARNING: precondition 'is_valid' was weakened from 'x > 0'    │
+│  to 'x >= 0'. Run review-chain to verify this is acceptable."   │
+│  Contract modifications require re-running Phase 2 chain.       │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -593,9 +599,14 @@ This catches architectural issues BEFORE writing real code.
 │  Gate: TESTS MUST PASS                                          │
 │  Source: Anti-Slop 08-09                                        │
 │                                                                 │
-│  RISK: Tests are weak. Happy-path only. Tests pass because     │
-│  they don't test the hard cases. "All tests pass" creates      │
+│  RISK: Tests are weak. Happy-path only. Tests pass because      │
+│  they don't test the hard cases. "All tests pass" creates       │
 │  false confidence.                                              │
+│                                                                 │
+│  MITIGATION: AI chain reviews test suite against contracts.     │
+│  "Postcondition 'others_unchanged' has no corresponding test."  │
+│  "Edge case: empty input not tested despite precondition."      │
+│  Chain generates test coverage gap report before Phase 6.       │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -606,9 +617,14 @@ This catches architectural issues BEFORE writing real code.
 │  Gate: ALL TESTS MUST PASS                                      │
 │  Source: Anti-Slop 07_maintenance-xtreme                        │
 │                                                                 │
-│  RISK: This phase gets skipped entirely. "Tests pass, ship it."│
-│  Hardening is the first thing cut when there's time pressure.  │
+│  RISK: This phase gets skipped entirely. "Tests pass, ship it." │
+│  Hardening is the first thing cut when there's time pressure.   │
 │  The 114-library ecosystem demonstrates this pattern.           │
+│                                                                 │
+│  MITIGATION: AI chain generates adversarial test suggestions.   │
+│  "Try: put with capacity=1, then put again. Eviction correct?"  │
+│  "Try: concurrent put from two SCOOP processors."               │
+│  Chain can't be skipped—it's automated in the workflow.         │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -619,9 +635,14 @@ This catches architectural issues BEFORE writing real code.
 │  Gate: Checklist complete                                       │
 │  Source: Anti-Slop 10-12                                        │
 │                                                                 │
-│  RISK: Checklist becomes rubber-stamp. Items marked complete   │
+│  RISK: Checklist becomes rubber-stamp. Items marked complete    │
 │  without actual verification. Documentation is copy-paste.      │
 │  "Done" means "I'm tired of working on this."                   │
+│                                                                 │
+│  MITIGATION: AI chain verifies checklist claims.                │
+│  "README claims 'full SCOOP support' but no SCOOP tests exist." │
+│  "Naming review says 'compliant' but `idx` violates standards." │
+│  Human sees synopsis of checklist verification, not raw list.   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -631,14 +652,18 @@ This catches architectural issues BEFORE writing real code.
 {library}/
 ├── .eiffel-workflow/
 │   ├── intent.md              # Phase 0 output (WHAT/WHY)
-│   ├── review.md              # Phase 2 output (adversarial AI feedback)
+│   ├── approach.md            # Phase 2 output (implementation sketch)
+│   ├── synopsis.md            # Phase 2 output (AI chain review summary)
 │   ├── tasks.md               # Phase 3 output (implementation plan)
 │   └── evidence/
 │       ├── phase1-compile.txt # Compilation output
-│       ├── phase2-review.txt  # Adversarial review output (which AI, key findings)
+│       ├── phase2-chain.txt   # Full AI chain output (Ollama→Claude→Grok→Gemini)
 │       ├── phase4-compile.txt
+│       ├── phase4-diff.txt    # Contract change detection (if any)
 │       ├── phase5-tests.txt   # Test execution output
-│       └── phase6-tests.txt
+│       ├── phase5-coverage.txt # AI chain test coverage gap report
+│       ├── phase6-tests.txt
+│       └── phase7-verify.txt  # AI chain checklist verification
 ├── src/
 │   └── *.e                    # Eiffel source with contracts
 ├── test/
@@ -646,7 +671,7 @@ This catches architectural issues BEFORE writing real code.
 └── {library}.ecf              # Project configuration
 ```
 
-**Note:** The evidence files are supposed to prove work was done. In practice, they often become pro-forma—pasted output that nobody reads. The existence of an evidence file does not guarantee the evidence was examined.
+**Note:** Evidence files are generated automatically by the AI chain. The chain can't be skipped—it's part of the workflow. Whether the human READS the synopsis is another matter, but at least the evidence exists for audit.
 
 ### 4.3 Slash Commands
 
@@ -676,31 +701,28 @@ This catches architectural issues BEFORE writing real code.
 # Failure: Cannot proceed until fixed
 ```
 
-**Adversarial Review Gate (Phase 2):**
-```
-# Mandatory before proceeding to implementation
-1. Export contracts to portable format (Eiffel source or summary)
-2. Submit to at least ONE other AI (Grok, Gemini, GPT-4, etc.)
-3. Prompt: "Review these Eiffel contracts for: missing preconditions,
-   weak postconditions, edge cases not covered, implicit assumptions,
-   potential runtime failures. Be adversarial."
-4. Record findings in .eiffel-workflow/review.md
-5. Record which AI and key findings in evidence/phase2-review.txt
+**Adversarial Review Gate (Phase 2) - AUTOMATED CHAIN:**
+```bash
+# ONE COMMAND runs full progressive chain
+$ simple_ai_client review-chain src/ approach.md --output synopsis.md
 
-# Required: At least one external AI review completed
-# Failure: Cannot proceed until review done and findings addressed
-# Routing: If review reveals contract gaps → return to Phase 1
+# Chain: Ollama → Claude → Grok → Gemini → Human synopsis
+# Each AI builds on previous findings
+# Human receives prioritized, digestible summary
 
-WHY THIS MATTERS: The primary AI and human often share blind spots.
-The human depends on AI expertise but AI hallucinates. Cross-AI review
-is a sanity check that catches errors neither party would catch alone.
-Without a mandated phase, this review becomes a "remember to do it"
-chore that humans forget. The tool sits unused in the toolbox.
+# Evidence: Chain output saved to .eiffel-workflow/evidence/phase2-chain.txt
+# Required: synopsis.md generated, human reviews and approves
+# Failure: Cannot proceed until MUST FIX items addressed
+# Routing: If chain reveals contract gaps → return to Phase 1
 
-THE REALITY: Even with a mandated phase, the human may skip it when
-pressed for time. "I'll do the adversarial review on the next library."
-Mandates only work when someone is checking compliance. There is no
-one checking.
+WHY AUTOMATION MATTERS: Manual "submit to another AI" doesn't happen.
+Too much friction: export, copy-paste, wait, read, decide. The automated
+chain removes the friction—one command, multiple perspectives, human
+sees only the summary.
+
+THE REMAINING RISK: Human can still skip reading the synopsis. "Green
+light, ship it." But the chain at least RUNS. Evidence is generated.
+If problems surface later, the synopsis shows what was flagged.
 ```
 
 **Test Gates (Phases 5, 6):**
@@ -713,16 +735,21 @@ one checking.
 # Failure: Cannot proceed until fixed
 ```
 
-**Human Gates (Phases 0, 3):**
-- Phase 0: User reviews intent.md, confirms it captures requirements
-- Phase 3: User reviews tasks.md, confirms decomposition is appropriate
+**Human Gates (Now with AI Chain Support):**
+- Phase 0: User reviews intent.md + AI chain probing questions
+- Phase 2: User reviews synopsis.md (not raw AI output)
+- Phase 3: User reviews tasks.md + AI chain completeness check
+- Phase 7: User reviews checklist verification synopsis
 
-**The human gate problem:** These gates depend on a human who is:
-- Paying attention (not fatigued from hours of AI interaction)
-- Willing to push back (not eager to see progress)
-- Knowledgeable enough to spot problems (not dependent on AI expertise)
+**The improved human gate:** The AI chain does heavy lifting:
+- Human reviews SYNOPSIS, not raw output
+- Human is NOT assumed to be expert—can ask chain for clarification
+- Human arbitrates AI disagreements, doesn't find all problems alone
+- Evidence is auto-generated even if human skims
 
-All three assumptions are frequently false.
+**The remaining problem:** Human can still rubber-stamp. "Looks fine, next."
+But the cognitive load is much lower, and the evidence trail exists.
+Perfect? No. Better than manual cross-AI review? Yes.
 
 ### 4.5 Anti-Slop Rules (Unchanged)
 
