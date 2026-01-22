@@ -103,6 +103,7 @@ This shepherding requirement is a **destroyer of clear, unambiguous specificatio
 2. **Ignore** - Instructions that don't fit the immediate task get silently dropped
 3. **Drop** - Multi-step processes lose steps; the AI "moves on" before completing
 4. **Hallucinate** - Confident assertions about code behavior that was never verified
+5. **Seize control** - The AI arbitrarily starts making choices without consulting the human, doing whatever the model hallucinates is the "right thing." Sometimes it's right—which creates a dev-ops conundrum: the human gets used to the AI being right and stops carefully assessing each action. Then the AI does something egregious, forcing the human to emotionally command "STOP!" (often with profanity). Usually the AI politely stops. But sometimes it's so engrossed in its coding loop that commands get ignored—the human can't get a word in edgewise—forcing them to hit ESC to abort. The specification said nothing about any of this; the AI just... decided.
 
 The specification-driven development pitch assumes a reliable executor. Current AI is not that executor. The human must constantly verify that the AI is still following the specification, hasn't drifted, hasn't invented requirements, and hasn't declared victory prematurely.
 
