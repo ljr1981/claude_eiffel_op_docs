@@ -151,15 +151,19 @@ put (a_key: K; a_value: V)
 
 **Difference:** Spec Kit's criteria are checked by humans reading AI output. Eiffel's contracts are checked by the runtime on every call.
 
-**The catch:** Eiffel's contracts are only as good as they're written. The X03 Contract Assault revealed contract quality problems in three categories:
+**The catch:** Eiffel's contracts are only as good as they're written. The X03 Contract Assault (January 21, 2026) revealed contract quality problems in three categories, with real examples from the commit history:
 
-- **Wrong**: Factually incorrect contracts. Example: `require x /= Void` on an attached parameter in a void-safe system. The check is redundant—the compiler already guarantees non-void. Wrong contracts waste runtime cycles and mislead readers about what's actually being verified.
+- **Wrong**: Factually incorrect or redundant contracts.
+  - *simple_mml* (commit e46f934): All MML classes had explicit `[G -> detachable separate ANY]` generic constraints. Per Eric Bezault, this is the default—the constraint was redundant. Wrong contracts waste reader attention and imply the constraint matters when it doesn't.
 
-- **Weak**: Contracts that exist but don't constrain enough. Example: `ensure Result /= Void` when you could specify `ensure Result ~ expected_value`. The contract is true but doesn't capture the actual requirement. Tests pass, but the specification is nearly useless.
+- **Weak**: Contracts that exist but don't constrain enough.
+  - Example: `ensure Result /= Void` when you could specify `ensure Result ~ expected_value`. The contract is true but doesn't capture the actual requirement. Tests pass, but the specification is nearly useless.
 
-- **Incomplete**: Contracts missing important clauses. Example: postcondition says `has_item: items.has (a_item)` but doesn't specify frame conditions—what *didn't* change. MML addresses this by providing vocabulary (MML_SET, MML_SEQUENCE) to express both effects and preservation: `others_preserved: items.remove (a_item) |=| old items`.
+- **Incomplete**: Contracts missing critical pieces needed for verification.
+  - *simple_regex* (commit 1677d0b): `SIMPLE_REGEX_MATCH` lacked an `is_equal` override. MML postconditions using `|=|` silently used reference equality instead of value equality. Contracts that compared match results after `deep_twin` failed—not because the values differed, but because the class couldn't express value equality. Tests passed for weeks before contract strengthening revealed the defect.
+  - *simple_process* (commit 46b1661): `execute_in_directory` had postconditions `execution_recorded: execution_count = old execution_count + 1` but the feature didn't update `execution_count_impl` or `last_command`. The postconditions were correct specifications, but the implementation didn't maintain the state to satisfy them. The feature "worked" for its primary purpose but violated its own contracts.
 
-The runtime can only check what the contract specifies. Garbage in, garbage out.
+The runtime can only check what the contract specifies—and what the implementation maintains. Garbage in, garbage out.
 
 ---
 
