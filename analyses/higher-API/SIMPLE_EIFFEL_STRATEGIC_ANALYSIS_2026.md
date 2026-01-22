@@ -435,12 +435,16 @@ answer := ask.model ("claude-3")
 
 ### Recommendation
 
-**Assured Eiffel** or **Spec Eiffel**
+**Proven Eiffel**
 
-- "Assured" emphasizes the outcome: developers get assurance their code behaves correctly
-- "Spec" aligns with the 2026 specification-driven development trend
+- "Proven" emphasizes what contracts + tests + runtime verification provide: proof that the code behaves as specified
+- Aligns with the "probable to provable" trajectory Meyer describes for AI-assisted development
+- Bold claim, but backed by methodology: contracts are specifications, runtime checks are verification, tests are evidence
+- The name sets expectations high—which creates pressure to meet them. That pressure is a feature, not a bug.
 
-Alternative structure: Keep "Simple Eiffel" for the foundation, add new layer with different name.
+The risk of "overpromising" is mitigated by the methodology itself. If the contracts are strong, the tests are adversarial, and the verification is real, then "Proven" is accurate. If not, the name will feel like a lie—and that discomfort should drive better practices.
+
+Alternative structure: Keep "Simple Eiffel" for the foundation, add "Proven Eiffel" as the higher abstraction layer.
 
 ---
 
@@ -458,11 +462,11 @@ Part 2b demonstrated that methodologies evolve unevenly and even solutions can f
 ### Phase 2: Core Abstractions
 
 Build the five domain libraries:
-- `assured_fetch` (or `spec_fetch`)
-- `assured_serve`
-- `assured_transform`
-- `assured_automate`
-- `assured_ask`
+- `proven_fetch`
+- `proven_serve`
+- `proven_transform`
+- `proven_automate`
+- `proven_ask`
 
 **Critical:** Each domain library must be developed using the Eiffel Spec Kit workflow (see companion proposal), including:
 - Phase 2 adversarial review by other AIs before implementation
