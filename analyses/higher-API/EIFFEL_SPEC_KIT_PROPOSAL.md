@@ -334,18 +334,57 @@ Step 2b: Generate implementation SKETCH (not real code)
          - "Recursion with memoization for fibonacci"
          - Does NOT compile—it's an approach document
 
-Step 2c: Adversarial AI reviews BOTH contracts AND approach
-         - "This precondition doesn't require sorted input, but your
-            approach assumes it"
-         - "Your MML postcondition is O(n²)—will that be practical?"
-         - "The sketch shows recursion but no depth limit in contract"
+Step 2c: THREE-PASS REVIEW (layered AI + human)
+         Pass 1 - Self-critique (Claude reviews own output):
+                  "Wait, this precondition doesn't handle empty input..."
+                  "I should add a frame condition for unchanged keys..."
+
+         Pass 2 - Cross-AI critique (Grok/Gemini via simple_ai_client):
+                  "Claude missed that the MML postcondition is O(n²)..."
+                  "The sketch assumes sorted input but precondition doesn't require it"
+
+         Pass 3 - Human reviews (final approval):
+                  Sees: original + Claude's self-critique + Grok's critique
+                  Much less cognitive load—AIs did the heavy lifting
+                  Human focuses on: "Do I agree with the critiques? What's unresolved?"
 
 Step 2d: Refine contracts and approach based on findings
          - Strengthen weak contracts
          - Add missing MML model queries
          - Adjust approach if algorithm issues found
 
-Step 2e: Human reviews and approves (or routes back to Phase 1)
+Step 2e: Human approves refined output (or routes back to Phase 1)
+```
+
+**Why Three-Pass Review:**
+
+| Pass | Reviewer | Catches | Blind Spots |
+|------|----------|---------|-------------|
+| 1 | Claude (self) | Obvious errors, forgotten edge cases | Same assumptions as original |
+| 2 | Grok/Gemini | Different model's perspective, Claude's blind spots | May not know Eiffel well |
+| 3 | Human | Domain knowledge, business requirements | Fatigue, expertise gaps |
+
+**The key insight:** Human reviews *AI-reviewed* output, not *raw* output. The human's job shifts from "find all problems" to "arbitrate AI disagreements and catch what both missed." This is sustainable; reviewing everything alone is not.
+
+**CLI Flow:**
+
+```bash
+# Step 2c automated via simple_ai_client
+$ simple_ai_client review-contracts src/ --self-critique --cross-ai gemini
+
+Pass 1: Claude self-critique...
+  - precondition missing: empty input handling
+  - frame condition missing: put should specify unchanged keys
+  - model query needed: access_order for LRU tracking
+
+Pass 2: Gemini cross-AI critique...
+  - MML postcondition keys_model is O(n), sketch claims O(1)—mismatch
+  - Edge case: capacity=0 not addressed in preconditions
+  - SCOOP safety: what if put called during iteration?
+
+Generating review.md...
+
+Human review required: 6 issues identified, 0 resolved automatically.
 ```
 
 **Early MML Application (Step 2a)**
