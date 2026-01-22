@@ -679,15 +679,34 @@ This catches architectural issues BEFORE writing real code.
 |---------|-------|--------|
 | `/eiffel.intent` | 0 | Generate intent.md from description |
 | `/eiffel.contracts` | 1 | Generate class skeletons with contracts |
-| `/eiffel.review` | 2 | Submit contracts to other AIs for adversarial review |
-| `/eiffel.tasks` | 3 | Break contracts into implementation tasks |
-| `/eiffel.implement` | 4 | Write feature bodies (contracts frozen) |
-| `/eiffel.verify` | 5 | Generate and run contract-based tests |
-| `/eiffel.harden` | 6 | Adversarial and stress testing |
-| `/eiffel.ship` | 7 | Naming, docs, GitHub, ecosystem |
+| `/eiffel.review` | 2 | Run AI chain, present synopsis, BLOCK until human approves |
+| `/eiffel.tasks` | 3 | Generate tasks, run chain check, BLOCK until human approves |
+| `/eiffel.implement` | 4 | Write feature bodies, run diff-contracts |
+| `/eiffel.verify` | 5 | Generate tests, run chain coverage check |
+| `/eiffel.harden` | 6 | Run chain adversarial suggestions, generate tests |
+| `/eiffel.ship` | 7 | Run chain checklist verification, BLOCK until human approves |
 | `/eiffel.status` | Any | Show current phase and evidence |
 
-**The slash command illusion:** These commands make the workflow feel more structured. But a slash command is just a prompt. The AI can still forget, ignore, drop, hallucinate, and seize control after the command is invoked. The command doesn't enforce compliance—it just provides a starting point.
+**Slash commands as enforcement (not illusion):**
+
+The key insight: slash commands expand to prompts that **run CLI tools and block**.
+
+```
+/eiffel.review expands to prompt:
+
+"1. Run: simple_ai_client review-chain src/ approach.md --output synopsis.md
+ 2. Present synopsis.md to user with MUST FIX / SHOULD FIX / REVIEW sections
+ 3. Ask: 'Approve to proceed to Phase 3, or specify fixes needed?'
+ 4. DO NOT proceed until user explicitly says 'approved' or similar
+ 5. If user requests fixes, return to Phase 1 and re-run /eiffel.contracts"
+```
+
+The prompt forces Claude to:
+- **Execute the CLI** (can't skip—it's an instruction)
+- **Show the output** (user sees the synopsis)
+- **Wait for approval** (can't proceed without human input)
+
+This isn't an "honor system" anymore. The CLI runs, evidence is generated, and Claude is stuck at the gate until human responds. The human CAN rubber-stamp, but they have to actively do so.
 
 ### 4.4 Gate Enforcement
 
