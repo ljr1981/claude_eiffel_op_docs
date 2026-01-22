@@ -334,19 +334,30 @@ Step 2b: Generate implementation SKETCH (not real code)
          - "Recursion with memoization for fibonacci"
          - Does NOT compile—it's an approach document
 
-Step 2c: THREE-PASS REVIEW (layered AI + human)
-         Pass 1 - Self-critique (Claude reviews own output):
-                  "Wait, this precondition doesn't handle empty input..."
-                  "I should add a frame condition for unchanged keys..."
+Step 2c: PROGRESSIVE AI REVIEW CHAIN
 
-         Pass 2 - Cross-AI critique (Grok/Gemini via simple_ai_client):
-                  "Claude missed that the MML postcondition is O(n²)..."
+         Pass 1 - Ollama (weakest, local):
+                  First pass at finding obvious issues
+                  "This precondition is just 'True'—seems weak"
+                  Low cost, fast, catches surface problems
+
+         Pass 2 - Claude critiques Ollama's findings + original:
+                  "Ollama was right about the precondition. Also missing:
+                   empty input handling, frame condition for unchanged keys"
+
+         Pass 3 - Grok critiques Claude's work:
+                  "Claude added frame condition but MML postcondition is O(n²)..."
                   "The sketch assumes sorted input but precondition doesn't require it"
 
-         Pass 3 - Human reviews (final approval):
-                  Sees: original + Claude's self-critique + Grok's critique
-                  Much less cognitive load—AIs did the heavy lifting
-                  Human focuses on: "Do I agree with the critiques? What's unresolved?"
+         Pass 4 - Gemini (strongest) final AI review:
+                  "All previous reviewers missed: SCOOP safety during iteration"
+                  "Edge case: what if capacity is zero?"
+
+         Pass 5 - Human reviews SYNOPSIS:
+                  Sees: Concise summary of all issues found by chain
+                  NOT raw AI output—distilled, actionable list
+                  Can ask clarifying questions of any AI in chain
+                  NOT assumed to be subject matter expert
 
 Step 2d: Refine contracts and approach based on findings
          - Strengthen weak contracts
@@ -356,36 +367,64 @@ Step 2d: Refine contracts and approach based on findings
 Step 2e: Human approves refined output (or routes back to Phase 1)
 ```
 
-**Why Three-Pass Review:**
+**Why Progressive AI Review Chain:**
 
-| Pass | Reviewer | Catches | Blind Spots |
-|------|----------|---------|-------------|
-| 1 | Claude (self) | Obvious errors, forgotten edge cases | Same assumptions as original |
-| 2 | Grok/Gemini | Different model's perspective, Claude's blind spots | May not know Eiffel well |
-| 3 | Human | Domain knowledge, business requirements | Fatigue, expertise gaps |
+| Pass | Reviewer | Role | Cost |
+|------|----------|------|------|
+| 1 | Ollama (local) | Surface problems, obvious gaps | Free |
+| 2 | Claude | Deep Eiffel expertise, strengthens contracts | Medium |
+| 3 | Grok | Different perspective, catches Claude's assumptions | Medium |
+| 4 | Gemini | Final AI pass, strongest reasoning | Higher |
+| 5 | Human | Reviews synopsis, asks clarifying questions | Cognitive |
 
-**The key insight:** Human reviews *AI-reviewed* output, not *raw* output. The human's job shifts from "find all problems" to "arbitrate AI disagreements and catch what both missed." This is sustainable; reviewing everything alone is not.
+**The key insight:** Each AI "gangs up" on the previous work. By the time the human sees it, multiple AI perspectives have already beaten on the specs. Human receives a **synopsis**, not raw output—and can ask any AI in the chain for clarification if something is unclear. Human is NOT assumed to be a subject matter expert.
 
-**CLI Flow:**
+**CLI Flow (all automated via simple_ai_client):**
 
 ```bash
-# Step 2c automated via simple_ai_client
-$ simple_ai_client review-contracts src/ --self-critique --cross-ai gemini
+# Full review chain - ONE command
+$ simple_ai_client review-chain src/ --output synopsis.md
 
-Pass 1: Claude self-critique...
-  - precondition missing: empty input handling
-  - frame condition missing: put should specify unchanged keys
-  - model query needed: access_order for LRU tracking
+[1/4] Ollama reviewing contracts...
+      Found: 3 weak preconditions, 1 missing postcondition
 
-Pass 2: Gemini cross-AI critique...
-  - MML postcondition keys_model is O(n), sketch claims O(1)—mismatch
-  - Edge case: capacity=0 not addressed in preconditions
-  - SCOOP safety: what if put called during iteration?
+[2/4] Claude reviewing (includes Ollama findings)...
+      Found: +2 missing frame conditions, +1 MML model query needed
+      Confirmed: Ollama's 3 weak preconditions
 
-Generating review.md...
+[3/4] Grok reviewing (includes Claude findings)...
+      Found: +1 complexity mismatch (O(n²) vs claimed O(1))
+      Disputed: Claude's frame condition suggestion (argues unnecessary)
 
-Human review required: 6 issues identified, 0 resolved automatically.
+[4/4] Gemini reviewing (final AI pass)...
+      Found: +1 SCOOP safety issue during iteration
+      Resolved: Agrees with Grok on frame condition dispute
+
+Generating synopsis.md...
+
+═══════════════════════════════════════════════════════════════
+SYNOPSIS FOR HUMAN REVIEW
+═══════════════════════════════════════════════════════════════
+8 issues found, 1 disputed (resolved by Gemini)
+
+MUST FIX:
+  1. Precondition in `put`: add `not is_full` check
+  2. Postcondition in `remove`: add frame condition for other keys
+  3. MML model query missing: `access_order_model` for LRU
+
+SHOULD FIX:
+  4. Complexity: MML postcondition is O(n²), consider lazy evaluation
+  5. SCOOP: `put` during `across` iteration undefined behavior
+
+REVIEW NEEDED:
+  6-8. [Details in synopsis.md]
+
+To ask clarifying questions:
+  $ simple_ai_client clarify 3 --ask "Why is access_order needed?"
+═══════════════════════════════════════════════════════════════
 ```
+
+**The human's cognitive load:** Read a prioritized list. Ask questions if unclear. Approve or reject. That's it.
 
 **Early MML Application (Step 2a)**
 
