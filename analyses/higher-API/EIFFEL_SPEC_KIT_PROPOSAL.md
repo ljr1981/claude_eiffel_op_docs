@@ -400,6 +400,37 @@ feature -- Commands
 4. Implementation must maintain model state—discovered issues early
 5. Adversarial AI can spot MML weaknesses before implementation
 
+**The MML Progression: Prose → Code → Evidence**
+
+MML thinking can be applied logically in prose before it becomes code:
+
+```
+Phase 2 (prose in approach.md):
+    "The set of keys grows by one when adding a new key.
+     Existing keys are preserved. The new key maps to the given value."
+
+Phase 2a (MML code in contracts):
+    ensure
+        key_added: keys_model.has (a_key)
+        count_updated: keys_model.count = old keys_model.count +
+                      (if old keys_model.has (a_key) then 0 else 1 end)
+        value_stored: entries_model [a_key] = a_value
+        others_unchanged: keys_model.removed (a_key) |=| old keys_model.removed (a_key)
+
+Phase 5/6 (tests provide evidence):
+    test_put_new_key_increases_count        -- PASS
+    test_put_existing_key_preserves_count   -- PASS
+    test_put_preserves_other_keys           -- PASS
+    test_put_stores_correct_value           -- PASS
+```
+
+Each stage adds rigor:
+- **Prose**: Captures intent in natural language (can be reviewed by non-Eiffel readers)
+- **Code**: Makes intent machine-checkable (compiler verifies syntax, runtime verifies behavior)
+- **Evidence**: Proves intent is achieved (tests demonstrate postconditions hold)
+
+The prose MML in approach.md is a "draft" of the thinking. The adversarial AI can review this draft and ask "did you mean X or Y?" before it becomes code that's harder to change.
+
 **Implementation Sketch Example (Step 2b)**
 
 ```markdown
