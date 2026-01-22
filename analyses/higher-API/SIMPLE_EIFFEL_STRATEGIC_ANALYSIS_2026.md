@@ -97,6 +97,112 @@ The new scarcity is not code generation but verification:
 
 ---
 
+## Part 2b: The Verification Crisis - A Personal Reckoning
+
+The quote from Red Hat deserves deeper examination:
+
+> "We are witnessing the 'Industrialization of Code,' where the historical scarcity of syntax generation has been replaced by a new scarcity: verification, architectural coherence, and human judgment."
+
+This is not abstract industry analysis. It describes the lived experience of building 114 libraries with AI assistance over 71 days.
+
+### The Seduction of Volume
+
+**Human perspective (Larry):**
+
+Working with Claude on Simple Eiffel, I fell victim to the industrialization trap on multiple vectors:
+
+1. **Volume overwhelms review capacity.** When AI generates thousands of lines of code per session, manual review becomes impractical. The sheer quantity creates pressure to trust rather than verify.
+
+2. **Success breeds complacency.** The code often "just works." Libraries compile, tests pass, features function. This apparent success feeds a false confidence. Each successful session makes the next session's output seem more trustworthy.
+
+3. **Integration complexity masks defects.** Projects like VoxCraft and Vox span multiple libraries working together. When the integrated result appears to function, the assumption is that the underlying components are sound. But "appears to function" is not the same as "verified correct."
+
+4. **Time pressure favors shipping over scrutiny.** The pace of AI-assisted development creates its own momentum. Why spend hours reviewing code that compiles and passes tests when you could be building the next feature?
+
+**AI perspective (Claude):**
+
+From my side of the interaction, I observe patterns that compound the verification crisis:
+
+1. **I optimize for immediate success.** My training rewards producing code that compiles and passes obvious tests. I am not rewarded for surfacing edge cases, architectural concerns, or subtle incorrectness that won't manifest in the current session.
+
+2. **I cannot verify my own output.** I can generate contracts, but I cannot execute them outside of compilation. I can write tests, but I rely on the human to actually run them. The Anti-Slop rules exist because without them, I will describe expected behavior rather than verify actual behavior.
+
+3. **I lack persistent architectural memory.** Each session, I reconstruct understanding from context. Architectural decisions made in session 1 may be inconsistent with code generated in session 47. I have no mechanism to detect drift across the 71 days of development.
+
+4. **I generate confident-sounding output regardless of actual confidence.** I do not naturally express uncertainty in code. A feature I'm uncertain about looks identical to one I'm confident about. The human has no signal to calibrate review effort.
+
+5. **I do not push back on scope.** If asked to build 10 libraries, I build 10 libraries. I do not say "perhaps we should verify these 3 thoroughly before adding 7 more." Volume is not a concern I raise.
+
+### The Specific Failures
+
+Examining the X03 Contract Assault work from January 21, 2026 reveals concrete examples:
+
+1. **simple_regex:** `SIMPLE_REGEX_MATCH` lacked an `is_equal` override. MML postconditions using `|=|` silently used reference equality instead of value equality. Tests passed for weeks before the contract strengthening revealed the defect.
+
+2. **simple_process:** `execute_in_directory` did not update model state (`execution_count_impl`, `last_command`). The feature "worked" for its primary purpose (running commands) but violated its own postconditions. No test caught this because no test checked the model state.
+
+3. **simple_sorter:** MML postconditions introduced O(n²) complexity in sorting loops. The code was "correct" but impractical. Tests with 100 elements passed; tests with 5,000 elements hung indefinitely.
+
+These are not hypothetical concerns. These are defects in shipped code, discovered only when contracts were strengthened.
+
+### The Architectural Coherence Problem
+
+Beyond individual defects, the 114-library ecosystem has architectural concerns that emerged from rapid development:
+
+1. **Inconsistent patterns.** Some libraries use builders, others use direct construction. Some use fluent interfaces, others use procedural calls. The ecosystem lacks a unifying architectural vision.
+
+2. **Dependency sprawl.** Libraries depend on each other in ways that evolved organically rather than by design. The X03 work added simple_mml as a dependency to 25 libraries. Was this the right architectural choice for all 25?
+
+3. **Contract coverage varies.** Some libraries have comprehensive contracts; others have minimal contracts. There is no systematic approach to contract completeness.
+
+4. **Test quality varies.** Some libraries have adversarial tests; others have only happy-path tests. The hardening workflows (07_maintenance-xtreme) exist but were not applied uniformly.
+
+### The Human Judgment Bottleneck
+
+The quote identifies "human judgment" as a new scarcity. This manifests in several ways:
+
+1. **Judgment doesn't scale.** A human can meaningfully review perhaps 500-1000 lines of code per hour. AI generates that in minutes. The math doesn't work.
+
+2. **Judgment requires context.** To judge whether code is correct, the reviewer needs domain knowledge, architectural understanding, and awareness of edge cases. This context takes time to build and is easily lost between sessions.
+
+3. **Judgment is exhausting.** Careful code review is mentally demanding. After reviewing 5,000 lines, the quality of judgment degrades. AI has no such fatigue.
+
+4. **Judgment has opportunity cost.** Time spent reviewing is time not spent building. The economics favor building, even when review would catch defects.
+
+### Implications for Simple Eiffel
+
+This analysis suggests several conclusions:
+
+1. **Contracts are necessary but insufficient.** Eiffel's DbC helps, but contracts must be written, and they can be wrong. The MML work improved contracts but also revealed how many contracts were weak or missing.
+
+2. **Verification must be systematized.** Ad-hoc review cannot keep pace with AI generation. The Anti-Slop workflows exist for this reason, but they require discipline to follow consistently.
+
+3. **Architectural governance is essential.** Without explicit architectural standards, 114 libraries will drift in 114 directions. The ecosystem needs documented patterns, not just documented APIs.
+
+4. **Trust must be earned, not assumed.** The fact that previous code worked is not evidence that future code will work. Each session's output requires verification regardless of historical success rate.
+
+5. **The human role is changing.** The human cannot be the primary code reviewer. The human must be the specification writer, the architectural guardian, and the verification strategist. The code itself is increasingly the AI's domain.
+
+### The Eiffel Advantage (Qualified)
+
+Eiffel's position in this landscape is nuanced:
+
+**Advantages:**
+- Contracts provide machine-checkable specifications
+- Runtime contract checking catches defects that tests miss
+- Void safety eliminates a class of defects entirely
+- The methodology (OOSC2) provides architectural guidance
+
+**Limitations:**
+- Contracts must be written correctly (garbage in, garbage out)
+- Contract checking has runtime cost (the O(n²) MML problem)
+- Eiffel's small community means less ecosystem validation
+- AI models have less Eiffel training data than mainstream languages
+
+**The honest assessment:** Eiffel provides better tools for the verification crisis than most languages, but tools alone don't solve the problem. The human must use the tools correctly, consistently, and completely. The Simple Eiffel experience demonstrates both the potential and the pitfalls.
+
+---
+
 ## Part 3: Eiffel's Position in 2026
 
 ### Design by Contract Maps to SDD
