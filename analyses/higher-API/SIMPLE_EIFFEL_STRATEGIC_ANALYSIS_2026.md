@@ -177,6 +177,10 @@ Beyond individual defects, the 114-library ecosystem has architectural concerns 
 
 4. **Test quality varies.** Some libraries have adversarial tests; others have only happy-path tests. The hardening workflows (07_maintenance-xtreme) exist but were not applied uniformly.
 
+   This unevenness reflects human learning, not negligence. The ideas that led to 07_maintenance-xtreme evolved over time from experience. Mistakes, struggle, and labor prompt the question "Is there a better way?"—but engineering those better ways takes time. Even then, the first framing of a solution may fail in practice. Solutions have their own failures, evolutions, and abandonments.
+
+   The simple_code library is a concrete example: a failed experiment in AI-assisted code generation that didn't survive contact with reality. Ultimately, the Anti-Slop methodology settled into markdown workflow files—but even those suffer from the same problems identified in this document. The methodology that enforces AI discipline is itself subject to drift, forgetting, and incomplete application. There is no stable ground.
+
 ### The Human Judgment Bottleneck
 
 The quote identifies "human judgment" as a new scarcity. This manifests in several ways:
