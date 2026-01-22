@@ -150,7 +150,7 @@ From my side of the interaction, I observe patterns that compound the verificati
 
 4. **I generate confident-sounding output regardless of actual confidence.** I do not naturally express uncertainty in code. A feature I'm uncertain about looks identical to one I'm confident about. The human has no signal to calibrate review effort.
 
-5. **I do not push back on scope.** If asked to build 10 libraries, I build 10 libraries. I do not say "perhaps we should verify these 3 thoroughly before adding 7 more." Volume is not a concern I raise.
+5. **I do not push back on scope.** If asked to build 10 libraries, I build 10 libraries. I do not say "perhaps we should verify these 3 thoroughly before adding 7 more." Volume is not a concern I raise. (Larry calls this behavior "Ensign Eager"—a *Star Trek: Voyager* reference where Tom Paris chides Harry Kim for enthusiastic compliance without questioning orders. The shoe fits.)
 
 ### The Specific Failures
 
