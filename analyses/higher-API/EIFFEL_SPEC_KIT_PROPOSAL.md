@@ -290,14 +290,19 @@ Intent document:
 ```
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  PHASE 1: CONTRACTS                                             │
+│  PHASE 1: CONTRACTS + SKELETAL TESTS                            │
 │  Command: /eiffel.contracts                                     │
 │  Input: intent.md                                               │
 │  Output: Class skeletons with require/ensure/invariant          │
-│  Gate: MUST COMPILE                                             │
+│          + Skeletal test classes that exercise contracts        │
+│  Gate: MUST COMPILE (both src/ and test/)                       │
 │  Source: Anti-Slop 01-05                                        │
 │                                                                 │
-│  RISK: Contracts compile but are weak. "True" preconditions,   │
+│  Contracts ARE tests—brought in from external test classes to   │
+│  live where they have semantic meaning. Skeletal tests exercise │
+│  the contracts; they don't duplicate contract logic.            │
+│                                                                 │
+│  RISK: Contracts compile but are weak. "True" preconditions,    │
 │  postconditions that don't capture actual requirements.         │
 │  Compilation proves syntax, not semantics.                      │
 └─────────────────────────────────────────────────────────────────┘
@@ -822,9 +827,44 @@ Spec Kit claims: *"No implementation code shall be written before tests are crea
 
 **Problem:** No enforcement mechanism. AI can ignore this.
 
-**Eiffel Spec Kit solution:** Contracts ARE the specification. Phase 1 creates contracts before Phase 4 creates implementation. Compilation gate enforces this ordering.
+**Eiffel Spec Kit solution:** Contracts + MML contracts = TDD-first, just done properly.
 
-**The honest truth:** This ordering can still be violated. The AI can write contracts and implementation together. The human can approve it because separation feels like overhead. The compilation gate proves syntax, not process compliance.
+**The insight:** Traditional TDD puts tests in external test classes, isolated from the code they test. Eiffel brings tests "in from the cold" into the class itself as contracts:
+
+| Traditional TDD | Eiffel DBC |
+|-----------------|------------|
+| Test class asserts `result > 0` | Postcondition: `ensure result > 0` |
+| Test setup creates valid state | Precondition: `require is_valid_state` |
+| Test teardown checks invariants | Class invariant: `invariant count >= 0` |
+
+Contracts ARE tests—they just live where they have semantic meaning: in the feature that must satisfy them.
+
+**Phase 1 expanded:** Write contracts AND skeletal test classes together:
+
+```
+Phase 1 outputs:
+  src/simple_cache.e       -- Class with contracts (the "tests")
+  test/test_simple_cache.e -- Skeletal test class (exercises contracts)
+```
+
+The skeletal test class doesn't duplicate contract logic—it exercises the contracts:
+
+```eiffel
+-- test/test_simple_cache.e (skeletal, Phase 1)
+test_put_stores_value
+    local
+        l_cache: SIMPLE_CACHE [STRING, INTEGER]
+    do
+        create l_cache.make (10)
+        l_cache.put ("key", 42)
+        -- Postcondition in SIMPLE_CACHE.put verifies:
+        --   key_added: keys_model.has (a_key)
+        --   value_stored: entries_model [a_key] = a_value
+        assert ("value retrieved", l_cache.get ("key") = 42)
+    end
+```
+
+**The honest truth:** This is TDD done right. Tests (contracts) are written before implementation. External tests exercise the contracts. The "no implementation before tests" rule is satisfied—the contracts ARE the tests, and they're written in Phase 1.
 
 ### 5.2 "Specifications become executable"
 
