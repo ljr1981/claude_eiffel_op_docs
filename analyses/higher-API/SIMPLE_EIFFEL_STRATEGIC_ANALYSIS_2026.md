@@ -233,6 +233,8 @@ Eiffel's position in this landscape is nuanced:
 
 ## Part 3: Eiffel's Position in 2026
 
+The verification crisis described in Part 2b is not unique to Simple Eiffel—it is the universal challenge of AI-assisted development. The question is whether Eiffel's tooling provides meaningful advantages in addressing it.
+
 ### Design by Contract Maps to SDD
 
 | SDD Concept | Eiffel Equivalent |
@@ -262,6 +264,20 @@ Eiffel's position in this landscape is nuanced:
 - Eiffel's contract system predates the SDD trend by decades
 - The industry is now arriving at conclusions Eiffel embodied from the start
 - This creates a potential marketing/positioning opportunity, but also risk of "told you so" perception
+
+### Addressing the Verification Crisis
+
+Part 2b identified five AI behaviors that undermine specifications: Forget, Ignore, Drop, Hallucinate, Seize Control. How does Eiffel address these?
+
+| AI Behavior | Eiffel Mitigation | Limitation |
+|-------------|-------------------|------------|
+| **Forget** | Contracts persist in code; oracle can restore context | Requires discipline to consult |
+| **Ignore** | Compiler enforces contract syntax | Cannot enforce contract *quality* |
+| **Drop** | Compilation gates catch incomplete work | Only if gates are followed |
+| **Hallucinate** | Runtime contracts expose false claims | Only if contracts are strong |
+| **Seize control** | Workflow phases constrain scope | Requires human enforcement |
+
+**Conclusion:** Eiffel provides mechanisms to *catch* some AI failures, but not to *prevent* them. The human remains the enforcement layer. This is an improvement over languages without contracts, but not a solution.
 
 ---
 
@@ -294,6 +310,9 @@ A solution-oriented abstraction layer that:
 2. Uses contracts as the primary specification mechanism
 3. Delegates to simple_* libraries for implementation
 4. Provides verification feedback, not just results
+5. **Enforces the discipline that Part 2b shows humans forget** - compilation gates, adversarial review phases, evidence requirements
+
+The missing layer is not just an API improvement—it must encode the Anti-Slop methodology into the development workflow itself. Otherwise, the same problems that emerged in 114 libraries will re-emerge in the abstraction layer.
 
 ---
 
@@ -427,11 +446,14 @@ Alternative structure: Keep "Simple Eiffel" for the foundation, add new layer wi
 
 ## Part 7: Implementation Strategy
 
+Part 2b demonstrated that methodologies evolve unevenly and even solutions can fail (simple_code). This implementation strategy must therefore be iterative, with explicit feedback loops and willingness to abandon approaches that don't survive contact with reality.
+
 ### Phase 1: Foundation Validation
 
 1. Confirm simple_* libraries are stable enough to build upon
 2. Identify gaps in simple_* coverage for the five domains
 3. Design contract patterns for each domain
+4. **Apply X03-level contract hardening** before building on top
 
 ### Phase 2: Core Abstractions
 
@@ -442,23 +464,31 @@ Build the five domain libraries:
 - `assured_automate`
 - `assured_ask`
 
+**Critical:** Each domain library must be developed using the Eiffel Spec Kit workflow (see companion proposal), including:
+- Phase 2 adversarial review by other AIs before implementation
+- Compilation gates with evidence files
+- Anti-Slop discipline throughout
+
 ### Phase 3: Integration Layer
 
 - Create unified entry point
 - Ensure domains compose well
 - Add cross-domain contracts (e.g., fetch result feeds transform input)
+- **Document architectural decisions** to prevent drift across sessions
 
 ### Phase 4: Documentation and Examples
 
 - Solution-oriented documentation ("How do I..." not "API reference")
 - Real-world examples for each domain
 - Migration guides from simple_* direct usage
+- **Failure case documentation** - what can go wrong, how contracts catch it
 
 ### Phase 5: Community Feedback
 
 - Present to Eiffel User Group
 - Gather feedback on naming, API design
 - Iterate based on actual usage
+- **Be willing to abandon** approaches that don't work (per Part 2b: "There is no stable ground")
 
 ---
 
@@ -487,6 +517,9 @@ Build the five domain libraries:
 
 8. DZone - "6 Software Development and DevOps Trends Shaping 2026"
    https://dzone.com/articles/software-devops-trends-shaping-2026
+
+9. Eiffel Spec Kit Proposal (companion document)
+   D:\prod\reference_docs\analyses\higher-API\EIFFEL_SPEC_KIT_PROPOSAL.md
 
 ---
 
