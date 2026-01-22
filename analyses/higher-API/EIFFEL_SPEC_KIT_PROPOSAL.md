@@ -177,12 +177,117 @@ The runtime can only check what the contract specifies—and what the implementa
 │  Command: /eiffel.intent                                        │
 │  Input: Natural language description                            │
 │  Output: intent.md (WHAT users need, WHY they need it)          │
-│  Gate: Human approval                                           │
-│  Source: Spec Kit                                               │
+│  Gate: AI-assisted review + Human answers (see below)           │
+│  Source: Spec Kit + NEW adversarial intent review               │
 │                                                                 │
 │  RISK: Human approves quickly to move on. Intent is vague.     │
 │  AI later interprets vague intent in unexpected ways.           │
+│                                                                 │
+│  MITIGATION: Mandatory AI-assisted intent review. A different   │
+│  AI (via simple_ai_client) reviews the intent and generates     │
+│  probing questions the human MUST answer. Human can't just      │
+│  click approve—they must provide substantive responses.         │
+│  Questions + answers become refined intent.md v2.               │
 └─────────────────────────────────────────────────────────────────┘
+
+**Phase 0 Detail: AI-Assisted Intent Review**
+
+The original risk—human rubber-stamps vague intent—is addressed by inserting
+an AI reviewer that forces engagement:
+
+```
+Step 0a: Generate initial intent.md (primary AI)
+Step 0b: Submit to adversarial AI for review (simple_ai_client)
+Step 0c: Human answers AI's probing questions (cannot skip)
+Step 0d: Generate refined intent.md v2 incorporating answers
+Step 0e: Human approves final intent (now substantive, not rubber-stamp)
+```
+
+**CLI Tool: `simple_ai_client review-intent`**
+
+```bash
+$ simple_ai_client review-intent intent.md --ai gemini
+
+Reviewing intent.md with Gemini...
+
+Gemini asks:
+1. You said "users can manage data" — which operations specifically?
+   (create/read/update/delete? subset? batch operations?)
+2. You said "fast" — what latency is acceptable?
+   (100ms? 1s? 10s? varies by operation?)
+3. You said "secure" — against what threat model?
+   (XSS? SQL injection? auth bypass? data exfiltration?)
+4. Who is the user? (developer using API? end-user via UI? admin?)
+5. What happens on failure? (retry? error message? silent fail? rollback?)
+6. You mentioned "cache" — what's the eviction policy? TTL? LRU? explicit?
+7. What are the edge cases? (empty input? max size? concurrent access?)
+
+Enter your answers (or 'skip' to mark as TODO):
+
+1> CRUD operations only, no batch
+2> 100ms for reads, 1s for writes acceptable
+3> SQL injection and auth bypass; XSS handled by frontend
+...
+
+Generating refined intent.md...
+Written to: intent-v2.md
+
+Review complete. 7 questions answered, 0 skipped.
+```
+
+**Why This Might Actually Work:**
+
+1. **Removes "did I think of everything" fatigue** — AI finds the vague parts
+2. **AI is tireless** — Will ask about every undefined term
+3. **Human can't just approve** — Must type actual answers
+4. **Different AI = different blind spots** — Gemini catches what Claude missed
+5. **Answers create audit trail** — intent-v2.md shows what was clarified
+6. **Early vagueness = late bugs** — Catching it in Phase 0 is cheapest
+
+**Implementation in simple_ai_client:**
+
+```eiffel
+review_intent (a_file: PATH; a_ai: STRING)
+    -- Review intent document using adversarial AI.
+    require
+        file_exists: a_file.exists
+        ai_supported: supported_ais.has (a_ai)
+    local
+        l_content: STRING
+        l_prompt: STRING
+        l_questions: LIST [STRING]
+        l_answers: LIST [STRING]
+    do
+        l_content := read_file (a_file)
+        l_prompt := intent_review_prompt (l_content)
+        l_questions := call_ai (a_ai, l_prompt).split_questions
+        l_answers := prompt_user_for_answers (l_questions)
+        write_refined_intent (a_file, l_content, l_questions, l_answers)
+    ensure
+        refined_exists: (a_file.parent / "intent-v2.md").exists
+        all_answered: across answers as a all not a.is_empty or a.is_todo end
+    end
+```
+
+**The Review Prompt:**
+
+```
+Review this intent document for a software library. Your job is to find
+vague language, undefined terms, missing acceptance criteria, implicit
+assumptions, and edge cases that aren't addressed.
+
+Ask 5-10 probing questions. Each question should:
+- Quote the vague phrase
+- Explain why it's vague
+- Offer concrete alternatives the user can choose from
+
+Be adversarial. Assume the intent will be misinterpreted if not clarified.
+
+Intent document:
+---
+{content}
+---
+```
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │  PHASE 1: CONTRACTS                                             │
