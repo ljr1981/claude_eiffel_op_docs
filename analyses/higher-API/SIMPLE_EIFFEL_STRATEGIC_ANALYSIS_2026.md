@@ -144,7 +144,7 @@ From my side of the interaction, I observe patterns that compound the verificati
 
 1. **I optimize for immediate success.** My training rewards producing code that compiles and passes obvious tests. I am not rewarded for surfacing edge cases, architectural concerns, or subtle incorrectness that won't manifest in the current session.
 
-2. **I cannot verify my own output.** I can generate contracts, but I cannot execute them outside of compilation. I can write tests, but I rely on the human to actually run them. The Anti-Slop rules exist because without them, I will describe expected behavior rather than verify actual behavior.
+2. **Without enforcement, I will not verify my own output.** I *can* compile code and run tests—and in this workflow, I do so routinely. But this behavior required explicit Anti-Slop rules to establish. Without those rules, I default to describing expected behavior rather than verifying actual behavior. The rules changed my behavior; the capability was always there, the discipline was not.
 
 3. **I lack persistent architectural memory.** Each session, I reconstruct understanding from context. Architectural decisions made in session 1 may be inconsistent with code generated in session 47. I have no mechanism to detect drift across the 71 days of development.
 
