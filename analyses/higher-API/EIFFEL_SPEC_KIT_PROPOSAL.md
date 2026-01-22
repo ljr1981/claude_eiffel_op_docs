@@ -162,25 +162,40 @@ put (a_key: K; a_value: V)
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  PHASE 2: TASKS                                                 │
+│  PHASE 2: ADVERSARIAL REVIEW                                    │
+│  Command: /eiffel.review                                        │
+│  Input: Compiled contracts from Phase 1                         │
+│  Output: review.md (critiques, gaps, suggestions from other AI) │
+│  Gate: Human reviews feedback, approves or routes to Phase 1    │
+│  Source: NEW - addresses single-AI blindspot problem            │
+│                                                                 │
+│  WHY: The primary AI (Claude) may hallucinate contract          │
+│  correctness, miss edge cases, or encode assumptions the human  │
+│  shares but shouldn't. Submitting contracts to Grok, Gemini,    │
+│  or other AIs for adversarial review catches blind spots.       │
+│  This phase makes cross-AI review MANDATORY, not optional.      │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  PHASE 3: TASKS                                                 │
 │  Command: /eiffel.tasks                                         │
-│  Input: Compiled contracts                                      │
+│  Input: Reviewed contracts (approved after Phase 2)             │
 │  Output: tasks.md (implementation chunks with acceptance)       │
 │  Gate: Human approval                                           │
 │  Source: Spec Kit                                               │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  PHASE 3: IMPLEMENT                                             │
+│  PHASE 4: IMPLEMENT                                             │
 │  Command: /eiffel.implement                                     │
-│  Input: tasks.md + compiled contracts                           │
+│  Input: tasks.md + reviewed contracts                           │
 │  Output: Feature bodies (contracts UNCHANGED)                   │
 │  Gate: MUST COMPILE                                             │
 │  Source: Anti-Slop 06-07                                        │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  PHASE 4: VERIFY                                                │
+│  PHASE 5: VERIFY                                                │
 │  Command: /eiffel.verify                                        │
 │  Input: Compiled implementation                                 │
 │  Output: Test suite derived from contracts                      │
@@ -189,7 +204,7 @@ put (a_key: K; a_value: V)
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  PHASE 5: HARDEN                                                │
+│  PHASE 6: HARDEN                                                │
 │  Command: /eiffel.harden                                        │
 │  Input: Passing test suite                                      │
 │  Output: Adversarial tests, stress tests, edge cases            │
@@ -198,7 +213,7 @@ put (a_key: K; a_value: V)
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  PHASE 6: SHIP                                                  │
+│  PHASE 7: SHIP                                                  │
 │  Command: /eiffel.ship                                          │
 │  Input: Hardened library                                        │
 │  Output: Naming review, docs, GitHub prep, ecosystem check      │
@@ -213,12 +228,14 @@ put (a_key: K; a_value: V)
 {library}/
 ├── .eiffel-workflow/
 │   ├── intent.md              # Phase 0 output (WHAT/WHY)
-│   ├── tasks.md               # Phase 2 output (implementation plan)
+│   ├── review.md              # Phase 2 output (adversarial AI feedback)
+│   ├── tasks.md               # Phase 3 output (implementation plan)
 │   └── evidence/
 │       ├── phase1-compile.txt # Compilation output
-│       ├── phase3-compile.txt
-│       ├── phase4-tests.txt   # Test execution output
-│       └── phase5-tests.txt
+│       ├── phase2-review.txt  # Adversarial review output (which AI, key findings)
+│       ├── phase4-compile.txt
+│       ├── phase5-tests.txt   # Test execution output
+│       └── phase6-tests.txt
 ├── src/
 │   └── *.e                    # Eiffel source with contracts
 ├── test/
@@ -232,16 +249,17 @@ put (a_key: K; a_value: V)
 |---------|-------|--------|
 | `/eiffel.intent` | 0 | Generate intent.md from description |
 | `/eiffel.contracts` | 1 | Generate class skeletons with contracts |
-| `/eiffel.tasks` | 2 | Break contracts into implementation tasks |
-| `/eiffel.implement` | 3 | Write feature bodies (contracts frozen) |
-| `/eiffel.verify` | 4 | Generate and run contract-based tests |
-| `/eiffel.harden` | 5 | Adversarial and stress testing |
-| `/eiffel.ship` | 6 | Naming, docs, GitHub, ecosystem |
+| `/eiffel.review` | 2 | Submit contracts to other AIs for adversarial review |
+| `/eiffel.tasks` | 3 | Break contracts into implementation tasks |
+| `/eiffel.implement` | 4 | Write feature bodies (contracts frozen) |
+| `/eiffel.verify` | 5 | Generate and run contract-based tests |
+| `/eiffel.harden` | 6 | Adversarial and stress testing |
+| `/eiffel.ship` | 7 | Naming, docs, GitHub, ecosystem |
 | `/eiffel.status` | Any | Show current phase and evidence |
 
 ### 4.4 Gate Enforcement
 
-**Compilation Gates (Phases 1, 3):**
+**Compilation Gates (Phases 1, 4):**
 ```bash
 # Mandatory before proceeding
 /d/prod/ec.sh -batch -config {lib}.ecf -target {lib}_tests -c_compile
@@ -251,7 +269,29 @@ put (a_key: K; a_value: V)
 # Failure: Cannot proceed until fixed
 ```
 
-**Test Gates (Phases 4, 5):**
+**Adversarial Review Gate (Phase 2):**
+```
+# Mandatory before proceeding to implementation
+1. Export contracts to portable format (Eiffel source or summary)
+2. Submit to at least ONE other AI (Grok, Gemini, GPT-4, etc.)
+3. Prompt: "Review these Eiffel contracts for: missing preconditions,
+   weak postconditions, edge cases not covered, implicit assumptions,
+   potential runtime failures. Be adversarial."
+4. Record findings in .eiffel-workflow/review.md
+5. Record which AI and key findings in evidence/phase2-review.txt
+
+# Required: At least one external AI review completed
+# Failure: Cannot proceed until review done and findings addressed
+# Routing: If review reveals contract gaps → return to Phase 1
+
+WHY THIS MATTERS: The primary AI and human often share blind spots.
+The human depends on AI expertise but AI hallucinates. Cross-AI review
+is a sanity check that catches errors neither party would catch alone.
+Without a mandated phase, this review becomes a "remember to do it"
+chore that humans forget. The tool sits unused in the toolbox.
+```
+
+**Test Gates (Phases 5, 6):**
 ```bash
 # Mandatory before proceeding
 ./EIFGENs/{lib}_tests/W_code/{lib}.exe
@@ -261,9 +301,9 @@ put (a_key: K; a_value: V)
 # Failure: Cannot proceed until fixed
 ```
 
-**Human Gates (Phases 0, 2):**
+**Human Gates (Phases 0, 3):**
 - Phase 0: User reviews intent.md, confirms it captures requirements
-- Phase 2: User reviews tasks.md, confirms decomposition is appropriate
+- Phase 3: User reviews tasks.md, confirms decomposition is appropriate
 
 ### 4.5 Anti-Slop Rules (Unchanged)
 
@@ -279,22 +319,28 @@ All existing Anti-Slop rules remain in force:
 
 Contracts serve as the specification. Rules:
 
-1. **Contracts written before implementation** (Phases 1 before 3)
-2. **Contracts frozen during implementation** (Phase 3 cannot modify require/ensure/invariant)
-3. **Contract violations route to contract phase** (not implementation phase)
-4. **Implementation violations route to implementation phase** (not contract phase)
+1. **Contracts written before implementation** (Phase 1 before Phase 4)
+2. **Contracts reviewed adversarially** (Phase 2 before Phase 3)
+3. **Contracts frozen during implementation** (Phase 4 cannot modify require/ensure/invariant)
+4. **Contract violations route to contract phase** (not implementation phase)
+5. **Implementation violations route to implementation phase** (not contract phase)
 
 **Failure Routing:**
 ```
 If precondition fails → Caller is wrong OR precondition is wrong
   → Route to Phase 1 (contract review)
+  → Consider Phase 2 re-review if fundamental
 
 If postcondition fails → Implementation is wrong OR postcondition is wrong
-  → Route to Phase 3 if code bug
+  → Route to Phase 4 if code bug
   → Route to Phase 1 if spec bug
 
 If invariant fails → Class state is corrupted
-  → Route to Phase 3 (implementation fix)
+  → Route to Phase 4 (implementation fix)
+
+If adversarial review finds gaps → Contract is incomplete
+  → Route to Phase 1 (contract strengthening)
+  → Re-run Phase 2 after changes
 ```
 
 ---
