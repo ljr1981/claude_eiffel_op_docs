@@ -303,12 +303,12 @@ Intent document:
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│  PHASE 2: ADVERSARIAL REVIEW                                    │
+│  PHASE 2: ADVERSARIAL REVIEW + APPROACH SKETCH                  │
 │  Command: /eiffel.review                                        │
 │  Input: Compiled contracts from Phase 1                         │
-│  Output: review.md (critiques, gaps, suggestions from other AI) │
+│  Output: review.md, approach.md, MML model queries              │
 │  Gate: Human reviews feedback, approves or routes to Phase 1    │
-│  Source: NEW - addresses single-AI blindspot problem            │
+│  Source: NEW - addresses single-AI blindspot + early MML        │
 │                                                                 │
 │  WHY: The primary AI (Claude) may hallucinate contract          │
 │  correctness, miss edge cases, or encode assumptions the human  │
@@ -319,6 +319,135 @@ Intent document:
 │  to address... the friction is real. This phase is most likely │
 │  to be abandoned.                                               │
 └─────────────────────────────────────────────────────────────────┘
+
+**Phase 2 Detail: Substeps**
+
+```
+Step 2a: Add MML model queries to contracts (EARLY MML)
+         - Add model queries that postconditions can reference
+         - Example: items_model: MML_SET [G] for collection classes
+         - Strengthens contracts BEFORE implementation
+
+Step 2b: Generate implementation SKETCH (not real code)
+         - Pseudocode or outline showing intended approach
+         - "I plan to use a hash table for O(1) lookup"
+         - "Recursion with memoization for fibonacci"
+         - Does NOT compile—it's an approach document
+
+Step 2c: Adversarial AI reviews BOTH contracts AND approach
+         - "This precondition doesn't require sorted input, but your
+            approach assumes it"
+         - "Your MML postcondition is O(n²)—will that be practical?"
+         - "The sketch shows recursion but no depth limit in contract"
+
+Step 2d: Refine contracts and approach based on findings
+         - Strengthen weak contracts
+         - Add missing MML model queries
+         - Adjust approach if algorithm issues found
+
+Step 2e: Human reviews and approves (or routes back to Phase 1)
+```
+
+**Early MML Application (Step 2a)**
+
+MML should be applied at the CONTRACT stage, not after implementation:
+
+```eiffel
+-- BEFORE MML (Phase 1 output - weak)
+class SIMPLE_CACHE [K, V]
+
+feature -- Commands
+    put (a_key: K; a_value: V)
+        require
+            key_valid: a_key /= Void
+        ensure
+            has_key: has (a_key)
+        end
+
+-- AFTER MML (Phase 2a output - strong)
+class SIMPLE_CACHE [K, V]
+
+feature -- Model Queries
+    keys_model: MML_SET [K]
+            -- Model of all keys in cache.
+        do
+            create Result.make_empty
+            across internal_table as ic loop
+                Result := Result & @ic.key
+            end
+        end
+
+    entries_model: MML_MAP [K, V]
+            -- Model of key-value pairs.
+
+feature -- Commands
+    put (a_key: K; a_value: V)
+        require
+            key_valid: a_key /= Void
+        ensure
+            key_added: keys_model.has (a_key)
+            value_stored: entries_model [a_key] = a_value
+            count_updated: keys_model.count = old keys_model.count +
+                          (if old keys_model.has (a_key) then 0 else 1 end)
+            others_unchanged: keys_model.removed (a_key) |=| old keys_model.removed (a_key)
+        end
+```
+
+**Why MML Early:**
+1. Forces thinking about WHAT changes, not just that something changed
+2. Frame conditions (what DIDN'T change) become natural
+3. Postconditions become testable and precise
+4. Implementation must maintain model state—discovered issues early
+5. Adversarial AI can spot MML weaknesses before implementation
+
+**Implementation Sketch Example (Step 2b)**
+
+```markdown
+## approach.md for SIMPLE_CACHE
+
+### Data Structure
+- Internal hash table (HASH_TABLE [V, K])
+- Separate doubly-linked list for LRU ordering
+- Hash table values point to list nodes for O(1) LRU update
+
+### Algorithm: put
+1. If key exists: update value, move node to front of LRU list
+2. If key doesn't exist and cache full: evict LRU (tail of list)
+3. Insert new entry at front of LRU list
+4. Update hash table
+
+### Complexity
+- put: O(1) average
+- get: O(1) average
+- eviction: O(1)
+
+### Edge Cases
+- Empty cache
+- Single-element cache (head = tail)
+- Duplicate puts (update vs insert)
+- Capacity = 0 (degenerate case—always evict?)
+```
+
+**Adversarial Review of Sketch (Step 2c)**
+
+The adversarial AI sees BOTH the contracts AND the approach:
+
+```
+Adversarial AI asks:
+1. Your sketch says "O(1) average" but MML postcondition iterates
+   all keys for keys_model—that's O(n). Is this acceptable for
+   contract checking, or do you need a faster model?
+
+2. Edge case "Capacity = 0" isn't addressed in preconditions.
+   Should `require capacity > 0` be added to make?
+
+3. The sketch mentions "doubly-linked list" but contracts don't
+   specify LRU ordering preservation. Add postcondition?
+
+4. What happens if put is called during iteration? SCOOP-safe?
+```
+
+This catches architectural issues BEFORE writing real code.
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │  PHASE 3: TASKS                                                 │
