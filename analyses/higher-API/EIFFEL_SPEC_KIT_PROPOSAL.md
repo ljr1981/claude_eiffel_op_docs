@@ -1,7 +1,7 @@
-# Eiffel Spec Kit: Hybrid Methodology Proposal
+# Eiffel Spec Kit: A Methodology Experiment
 
 **Date:** January 21, 2026
-**Status:** Draft Proposal
+**Status:** Draft Proposal (Experimental)
 **Authors:** Larry Rix + Claude (Anthropic)
 
 ---
@@ -14,6 +14,15 @@ This proposal outlines a hybrid methodology combining:
 - Eiffel's Design by Contract as the specification mechanism
 
 The result is a workflow where specifications are machine-checkable contracts, not markdown documents interpreted by AI.
+
+**The honest caveat:** This is an experiment, not a proven solution. The companion Strategic Analysis document reveals that:
+- The existing Anti-Slop methodology has not been consistently followed
+- Methodologies evolve unevenly and can fail entirely (simple_code)
+- AI will forget, ignore, drop, hallucinate, and seize control regardless of workflow
+- The human enforcement layer is unreliable—humans forget, get tired, and take shortcuts
+- Adding more phases may just create more phases to skip
+
+This proposal may produce the same outcome as previous methodology attempts: initial enthusiasm followed by gradual abandonment as the overhead becomes burdensome. We document it anyway because the alternative—no methodology—has demonstrably failed.
 
 ---
 
@@ -68,7 +77,9 @@ The existing Simple Eiffel methodology consists of 12 workflows with explicit ve
 - Task decomposition embedded in steps, not explicit
 - No slash command interface
 
-### 2.3 The Opportunity
+**The uncomfortable truth:** These weaknesses are not the real problem. The Anti-Slop workflows exist and are documented. The problem is that they weren't consistently followed during the 114-library buildout. The human got tired. The AI got eager. Volume overwhelmed process. Adding a slash command interface won't fix human fatigue.
+
+### 2.3 The Opportunity (Qualified)
 
 Eiffel's Design by Contract already provides what Spec Kit tries to achieve with markdown:
 
@@ -78,6 +89,8 @@ Eiffel DbC:   Contract → Compiler Checks → Code → Runtime Checks → Tests
 ```
 
 The gap is UX, not capability. Eiffel has superior verification but inferior workflow ergonomics.
+
+**But:** Better ergonomics won't guarantee compliance. The Anti-Slop methodology had clear steps. They were skipped anyway. The question is whether slash commands and directory conventions create enough friction reduction to change behavior. The honest answer: probably not enough on their own.
 
 ---
 
@@ -106,6 +119,8 @@ The gap is UX, not capability. Eiffel has superior verification but inferior wor
 | Compilation gate | None | Mandatory |
 | Test gate | "NON-NEGOTIABLE" (unenforced) | Mandatory |
 | Evidence required | No | Yes |
+
+**Note on "Mandatory":** The Anti-Slop gates are mandatory in the documentation. In practice, they were often skipped. "Mandatory" means nothing without enforcement, and enforcement requires a human who is paying attention. See Part 2b of the Strategic Analysis for why this assumption fails.
 
 ### 3.3 Spec Format Comparison
 
@@ -136,6 +151,8 @@ put (a_key: K; a_value: V)
 
 **Difference:** Spec Kit's criteria are checked by humans reading AI output. Eiffel's contracts are checked by the runtime on every call.
 
+**The catch:** Eiffel's contracts are only as good as they're written. The X03 Contract Assault revealed that many contracts were weak, incomplete, or wrong. The runtime can only check what the contract specifies—and if the contract is weak, verification is weak. Garbage in, garbage out.
+
 ---
 
 ## 4. Proposed Hybrid: Eiffel Spec Kit
@@ -150,6 +167,9 @@ put (a_key: K; a_value: V)
 │  Output: intent.md (WHAT users need, WHY they need it)          │
 │  Gate: Human approval                                           │
 │  Source: Spec Kit                                               │
+│                                                                 │
+│  RISK: Human approves quickly to move on. Intent is vague.     │
+│  AI later interprets vague intent in unexpected ways.           │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -159,6 +179,10 @@ put (a_key: K; a_value: V)
 │  Output: Class skeletons with require/ensure/invariant          │
 │  Gate: MUST COMPILE                                             │
 │  Source: Anti-Slop 01-05                                        │
+│                                                                 │
+│  RISK: Contracts compile but are weak. "True" preconditions,   │
+│  postconditions that don't capture actual requirements.         │
+│  Compilation proves syntax, not semantics.                      │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -171,9 +195,12 @@ put (a_key: K; a_value: V)
 │                                                                 │
 │  WHY: The primary AI (Claude) may hallucinate contract          │
 │  correctness, miss edge cases, or encode assumptions the human  │
-│  shares but shouldn't. Submitting contracts to Grok, Gemini,    │
-│  or other AIs for adversarial review catches blind spots.       │
-│  This phase makes cross-AI review MANDATORY, not optional.      │
+│  shares but shouldn't. Cross-AI review catches blind spots.     │
+│                                                                 │
+│  RISK: Human skips this phase because it's tedious. Copy-paste │
+│  to another AI, wait for response, read critique, decide what  │
+│  to address... the friction is real. This phase is most likely │
+│  to be abandoned.                                               │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -183,6 +210,10 @@ put (a_key: K; a_value: V)
 │  Output: tasks.md (implementation chunks with acceptance)       │
 │  Gate: Human approval                                           │
 │  Source: Spec Kit                                               │
+│                                                                 │
+│  RISK: Task list becomes stale as implementation reveals        │
+│  unforeseen complexity. Nobody updates tasks.md. It becomes     │
+│  a historical artifact, not a living document.                  │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -192,6 +223,11 @@ put (a_key: K; a_value: V)
 │  Output: Feature bodies (contracts UNCHANGED)                   │
 │  Gate: MUST COMPILE                                             │
 │  Source: Anti-Slop 06-07                                        │
+│                                                                 │
+│  RISK: AI modifies contracts anyway when implementation is      │
+│  hard. "I need to weaken this precondition to make it work."   │
+│  Human allows it because fighting the AI is exhausting.         │
+│  Contract-first becomes contract-when-convenient.               │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -201,6 +237,10 @@ put (a_key: K; a_value: V)
 │  Output: Test suite derived from contracts                      │
 │  Gate: TESTS MUST PASS                                          │
 │  Source: Anti-Slop 08-09                                        │
+│                                                                 │
+│  RISK: Tests are weak. Happy-path only. Tests pass because     │
+│  they don't test the hard cases. "All tests pass" creates      │
+│  false confidence.                                              │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -210,6 +250,10 @@ put (a_key: K; a_value: V)
 │  Output: Adversarial tests, stress tests, edge cases            │
 │  Gate: ALL TESTS MUST PASS                                      │
 │  Source: Anti-Slop 07_maintenance-xtreme                        │
+│                                                                 │
+│  RISK: This phase gets skipped entirely. "Tests pass, ship it."│
+│  Hardening is the first thing cut when there's time pressure.  │
+│  The 114-library ecosystem demonstrates this pattern.           │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
@@ -219,6 +263,10 @@ put (a_key: K; a_value: V)
 │  Output: Naming review, docs, GitHub prep, ecosystem check      │
 │  Gate: Checklist complete                                       │
 │  Source: Anti-Slop 10-12                                        │
+│                                                                 │
+│  RISK: Checklist becomes rubber-stamp. Items marked complete   │
+│  without actual verification. Documentation is copy-paste.      │
+│  "Done" means "I'm tired of working on this."                   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -243,6 +291,8 @@ put (a_key: K; a_value: V)
 └── {library}.ecf              # Project configuration
 ```
 
+**Note:** The evidence files are supposed to prove work was done. In practice, they often become pro-forma—pasted output that nobody reads. The existence of an evidence file does not guarantee the evidence was examined.
+
 ### 4.3 Slash Commands
 
 | Command | Phase | Action |
@@ -256,6 +306,8 @@ put (a_key: K; a_value: V)
 | `/eiffel.harden` | 6 | Adversarial and stress testing |
 | `/eiffel.ship` | 7 | Naming, docs, GitHub, ecosystem |
 | `/eiffel.status` | Any | Show current phase and evidence |
+
+**The slash command illusion:** These commands make the workflow feel more structured. But a slash command is just a prompt. The AI can still forget, ignore, drop, hallucinate, and seize control after the command is invoked. The command doesn't enforce compliance—it just provides a starting point.
 
 ### 4.4 Gate Enforcement
 
@@ -289,6 +341,11 @@ The human depends on AI expertise but AI hallucinates. Cross-AI review
 is a sanity check that catches errors neither party would catch alone.
 Without a mandated phase, this review becomes a "remember to do it"
 chore that humans forget. The tool sits unused in the toolbox.
+
+THE REALITY: Even with a mandated phase, the human may skip it when
+pressed for time. "I'll do the adversarial review on the next library."
+Mandates only work when someone is checking compliance. There is no
+one checking.
 ```
 
 **Test Gates (Phases 5, 6):**
@@ -305,6 +362,13 @@ chore that humans forget. The tool sits unused in the toolbox.
 - Phase 0: User reviews intent.md, confirms it captures requirements
 - Phase 3: User reviews tasks.md, confirms decomposition is appropriate
 
+**The human gate problem:** These gates depend on a human who is:
+- Paying attention (not fatigued from hours of AI interaction)
+- Willing to push back (not eager to see progress)
+- Knowledgeable enough to spot problems (not dependent on AI expertise)
+
+All three assumptions are frequently false.
+
 ### 4.5 Anti-Slop Rules (Unchanged)
 
 All existing Anti-Slop rules remain in force:
@@ -314,6 +378,8 @@ All existing Anti-Slop rules remain in force:
 3. **Compile before document** - Code changes require compilation
 4. **No imagined behavior** - Test claims require actual test execution
 5. **Document ACTUAL not EXPECTED** - Results from execution, not prediction
+
+**The discipline gap:** These rules exist. They work when followed. The problem is consistent application across sessions, days, and context compressions. The AI doesn't remember the rules unless reminded. The human doesn't always remind. Drift is the default.
 
 ### 4.6 Contract Rules
 
@@ -343,6 +409,8 @@ If adversarial review finds gaps → Contract is incomplete
   → Re-run Phase 2 after changes
 ```
 
+**The routing fiction:** This routing assumes someone is tracking which phase owns which problem. In practice, whoever is fixing the bug fixes the bug—contract, implementation, or both—whatever makes the error go away. Phase boundaries blur under pressure.
+
 ---
 
 ## 5. Comparison with Spec Kit Claims
@@ -353,7 +421,9 @@ Spec Kit claims: *"No implementation code shall be written before tests are crea
 
 **Problem:** No enforcement mechanism. AI can ignore this.
 
-**Eiffel Spec Kit solution:** Contracts ARE the specification. Phase 1 creates contracts before Phase 3 creates implementation. Compilation gate enforces this ordering.
+**Eiffel Spec Kit solution:** Contracts ARE the specification. Phase 1 creates contracts before Phase 4 creates implementation. Compilation gate enforces this ordering.
+
+**The honest truth:** This ordering can still be violated. The AI can write contracts and implementation together. The human can approve it because separation feels like overhead. The compilation gate proves syntax, not process compliance.
 
 ### 5.2 "Specifications become executable"
 
@@ -363,6 +433,8 @@ Spec Kit claims: *"Specifications become executable, directly generating working
 
 **Eiffel Spec Kit solution:** Contracts ARE executable. The runtime checks them on every feature call.
 
+**The honest truth:** This is Eiffel's genuine advantage. Contracts are checked at runtime. But "executable" doesn't mean "correct." A contract that says `ensure True` is executable but useless. The quality of verification depends on the quality of contracts.
+
 ### 5.3 "Intent is the source of truth"
 
 Spec Kit claims: *"The shift moves from code is the source of truth to intent is the source of truth."*
@@ -370,6 +442,8 @@ Spec Kit claims: *"The shift moves from code is the source of truth to intent is
 **Problem:** Intent in markdown can drift from implementation.
 
 **Eiffel Spec Kit solution:** Intent is captured in contracts. Contracts are compiled code. Drift is detected by contract violations.
+
+**The honest truth:** Intent in intent.md can drift from contracts. Contracts can drift from implementation (if modified during Phase 4). The drift still happens—it's just detected at different points. Detection is valuable, but it's not prevention.
 
 ---
 
@@ -382,6 +456,8 @@ Spec Kit claims: *"The shift moves from code is the source of truth to intent is
 3. Create tasks.md template
 4. Define evidence file formats
 
+**Risk:** Documentation gets written but not read. The 12-workflow Anti-Slop methodology is documented. It wasn't consistently followed.
+
 ### Phase 2: Create Slash Command Skill
 
 1. Implement `/eiffel.intent` as Claude Code skill
@@ -389,11 +465,15 @@ Spec Kit claims: *"The shift moves from code is the source of truth to intent is
 3. Implement remaining commands
 4. Add `/eiffel.status` for progress tracking
 
+**Risk:** Skills get created but fall out of use. Initial enthusiasm fades. The slash command becomes one more thing to remember.
+
 ### Phase 3: Tooling Integration
 
 1. Create `.eiffel-workflow/` directory initializer
 2. Add evidence file generation
 3. Integrate with simple_oracle for session handoff
+
+**Risk:** Tooling becomes stale as requirements evolve. Nobody maintains it. The initializer creates files that become clutter.
 
 ### Phase 4: Validation
 
@@ -402,27 +482,39 @@ Spec Kit claims: *"The shift moves from code is the source of truth to intent is
 3. Document friction points
 4. Iterate on workflow
 
+**Risk:** Validation reveals that the workflow is too heavy for routine work. It gets used for "important" projects and skipped for everything else. Eventually, nothing feels important enough.
+
 ---
 
 ## 7. Risk Assessment
 
-| Risk | Mitigation |
-|------|------------|
-| Overhead too high | Phase 0 and 2 are lightweight; gates already exist |
-| AI ignores gates | Gates are enforced by human review of evidence files |
-| Contracts too verbose | Start with key features, expand coverage iteratively |
-| Tooling not ready | Manual execution first, automate later |
+| Risk | Mitigation | Honest Assessment |
+|------|------------|-------------------|
+| Overhead too high | Phase 0 and 2 are lightweight | Phase 2 (adversarial review) is not lightweight. It requires context-switching to another AI. |
+| AI ignores gates | Gates are enforced by human review of evidence files | Humans don't always review evidence files. Evidence becomes pro-forma. |
+| Contracts too verbose | Start with key features, expand coverage iteratively | "Iteratively" often means "never." The first pass becomes the final pass. |
+| Tooling not ready | Manual execution first, automate later | "Automate later" is tech debt that never gets paid. Manual stays manual. |
+| Methodology abandoned | ??? | This is the real risk. No mitigation identified. |
 
 ---
 
 ## 8. Success Metrics
 
-| Metric | Target |
-|--------|--------|
-| Contract coverage | 100% of public features have require/ensure |
-| Test coverage | 100% of contracts exercised by tests |
-| Evidence compliance | 100% of gates have evidence files |
-| Defect escape rate | 0 defects found post-Phase 5 |
+| Metric | Target | Honest Assessment |
+|--------|--------|-------------------|
+| Contract coverage | 100% of public features have require/ensure | Aspirational. The X03 work improved coverage but didn't achieve 100%. |
+| Test coverage | 100% of contracts exercised by tests | Tests can exercise contracts without being adversarial. Coverage ≠ quality. |
+| Evidence compliance | 100% of gates have evidence files | Files can exist without being reviewed. Compliance ≠ verification. |
+| Defect escape rate | 0 defects found post-Phase 6 | Unrealistic. Defects will escape. The question is severity and frequency. |
+
+**A more honest metric set:**
+
+| Metric | Target | Why This Matters |
+|--------|--------|------------------|
+| Phases actually followed | Track which phases get skipped | Reveals where the workflow breaks down |
+| Time to abandon | Measure how long methodology is followed before shortcuts begin | Predicts sustainability |
+| Defects caught by phase | Which phase catches the most bugs | Identifies high-value phases to prioritize |
+| Human frustration incidents | Count "STOP!" moments documented in Strategic Analysis | Measures AI controllability |
 
 ---
 
@@ -436,6 +528,12 @@ Eiffel has contracts. The appropriate solution for Eiffel is:
 3. Use contracts as the specification mechanism (not markdown)
 
 The result: specifications that are machine-checkable, not hope-based.
+
+**The honest conclusion:** This methodology is better than nothing. It is not a solution. The problems identified in the Strategic Analysis—AI behavior (forget, ignore, drop, hallucinate, seize control), human fatigue, methodology drift, no stable ground—will persist. The methodology provides structure for good days. It does not prevent bad days.
+
+The bet is the same as with "Proven Eiffel": either the methodology drives the discipline required to justify it, or it will be abandoned when the gap between aspiration and practice becomes too painful. Either outcome teaches something.
+
+What we cannot do is pretend that documenting a workflow solves the fundamental tension between AI capability and AI reliability. It doesn't. The workflow is a coping mechanism, not a cure.
 
 ---
 
@@ -475,11 +573,13 @@ Melting System Changes
 System Recompiled.
 
 # Status: PASS
+# Reviewed by: [NAME or "not reviewed"]
+# Issues found: [list or "none"]
 ```
 
 **Test evidence:**
 ```
-# Phase 4 Test Evidence
+# Phase 5 Test Evidence
 # Date: 2026-01-21 18:35:00
 # Command: ./EIFGENs/simple_cache_tests/W_code/simple_cache.exe
 
@@ -495,7 +595,11 @@ Results: 47 passed, 0 failed
 ALL TESTS PASSED
 
 # Status: PASS
+# Reviewed by: [NAME or "not reviewed"]
+# Test quality assessment: [adversarial/happy-path/unknown]
 ```
+
+**Note:** Added "Reviewed by" and quality fields to make the gap between "evidence exists" and "evidence examined" explicit.
 
 ---
 
@@ -513,5 +617,27 @@ ALL TESTS PASSED
 4. OOSC2 (Object-Oriented Software Construction, 2nd Edition)
    Bertrand Meyer, 1997
 
-5. Simple Eiffel Strategic Analysis
-   D:\prod\reference_docs\analyses\SIMPLE_EIFFEL_STRATEGIC_ANALYSIS_2026.md
+5. Simple Eiffel Strategic Analysis (companion document)
+   D:\prod\reference_docs\analyses\higher-API\SIMPLE_EIFFEL_STRATEGIC_ANALYSIS_2026.md
+
+---
+
+## Appendix D: Why Document This If It Might Fail?
+
+The Strategic Analysis documents a verification crisis. This proposal documents a response to that crisis. The response may not work. Why write it anyway?
+
+1. **Explicit failure is better than implicit failure.** If the methodology is documented and abandoned, we know what was tried. If there's no methodology, we don't know what we're failing to do.
+
+2. **Structure enables measurement.** With defined phases, we can track which phases get skipped. Without phases, we can't identify where the process breaks down.
+
+3. **The alternative is worse.** Vibe coding with Eiffel still produces unreliable software. Contracts help, but contracts alone don't enforce process. Some structure is better than no structure.
+
+4. **Future iterations need a baseline.** This proposal may be version 1.0 that gets replaced by version 2.0. But version 2.0 needs something to improve upon.
+
+5. **Honesty is itself valuable.** A proposal that acknowledges its limitations is more useful than one that pretends to solve problems it can't solve. The limitations documented here are the starting point for future work.
+
+The methodology may fail. The documentation of that failure will be useful. That's the bet.
+
+---
+
+*End of Proposal*
