@@ -439,12 +439,23 @@ answer := ask.model ("claude-3")
 
 - "Proven" emphasizes what contracts + tests + runtime verification provide: proof that the code behaves as specified
 - Aligns with the "probable to provable" trajectory Meyer describes for AI-assisted development
-- Bold claim, but backed by methodology: contracts are specifications, runtime checks are verification, tests are evidence
-- The name sets expectations high—which creates pressure to meet them. That pressure is a feature, not a bug.
 
-The risk of "overpromising" is mitigated by the methodology itself. If the contracts are strong, the tests are adversarial, and the verification is real, then "Proven" is accurate. If not, the name will feel like a lie—and that discomfort should drive better practices.
+**The overpromise risk is real.** Part 2b documented concrete failures: contracts that were weak, tests that missed defects, model queries that introduced O(n²) complexity. The X03 work revealed bugs in code that had been "passing tests" for weeks. "Proven" claims a level of rigor that the current ecosystem has not consistently achieved.
 
-Alternative structure: Keep "Simple Eiffel" for the foundation, add "Proven Eiffel" as the higher abstraction layer.
+The honest assessment:
+- Eiffel *can* provide proof-level confidence—but only when contracts are comprehensive, tests are adversarial, and verification is actually run
+- The Simple Eiffel experience shows this rigor is hard to maintain across 114 libraries and 71 days
+- Naming something "Proven" when the methodology is still evolving creates a credibility gap
+- If users encounter bugs in "Proven Eiffel" code, the name becomes a liability
+
+**Why use it anyway:**
+- The name creates accountability—it's harder to ship sloppy work under a name that claims rigor
+- The alternative names ("Assured", "Spec", "Verified") make weaker claims that are easier to hide behind
+- "Proven" forces the question: "Is this actually proven?" If the answer is "no," that's valuable feedback
+
+**The bet:** The name will either drive the discipline required to justify it, or it will be abandoned when the gap between claim and reality becomes embarrassing. Either outcome is informative.
+
+Alternative structure: Keep "Simple Eiffel" for the foundation, add "Proven Eiffel" as the higher abstraction layer—but only after the foundation has been hardened enough to deserve the name.
 
 ---
 
