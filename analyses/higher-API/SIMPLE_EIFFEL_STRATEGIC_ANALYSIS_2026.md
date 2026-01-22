@@ -189,6 +189,10 @@ The quote identifies "human judgment" as a new scarcity. This manifests in sever
 
 2. **Judgment requires context.** To judge whether code is correct, the reviewer needs domain knowledge, architectural understanding, and awareness of edge cases. This context takes time to build and is easily lost between sessions.
 
+   Compounding this: the human is not omniscient. Many domains in the 114-library ecosystem are outside Larry's wheelhouse. He leans heavily on the AI's training data for subject matter expertise—a dependency that may be misplaced given hallucination risks. The AI is not always the expert the human believes, wants, or needs it to be.
+
+   One mitigation: adversarial review by other AIs. Submitting Claude's output to Grok or Gemini for sanity-checking has yielded good fruit. But this is a human-bound "remember to do it" chore—and humans forget. The tool sits unused in the toolbox. A workflow like Spec Kit could help by making adversarial review a mandated phase rather than an optional afterthought.
+
 3. **Judgment is exhausting.** Careful code review is mentally demanding. After reviewing 5,000 lines, the quality of judgment degrades. AI has no such fatigue.
 
 4. **Judgment has opportunity cost.** Time spent reviewing is time not spent building. The economics favor building, even when review would catch defects.
