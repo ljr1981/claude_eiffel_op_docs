@@ -151,7 +151,15 @@ put (a_key: K; a_value: V)
 
 **Difference:** Spec Kit's criteria are checked by humans reading AI output. Eiffel's contracts are checked by the runtime on every call.
 
-**The catch:** Eiffel's contracts are only as good as they're written. The X03 Contract Assault revealed that many contracts were weak, incomplete, or wrong. The runtime can only check what the contract specifies—and if the contract is weak, verification is weak. Garbage in, garbage out.
+**The catch:** Eiffel's contracts are only as good as they're written. The X03 Contract Assault revealed contract quality problems in three categories:
+
+- **Wrong**: Factually incorrect contracts. Example: `require x /= Void` on an attached parameter in a void-safe system. The check is redundant—the compiler already guarantees non-void. Wrong contracts waste runtime cycles and mislead readers about what's actually being verified.
+
+- **Weak**: Contracts that exist but don't constrain enough. Example: `ensure Result /= Void` when you could specify `ensure Result ~ expected_value`. The contract is true but doesn't capture the actual requirement. Tests pass, but the specification is nearly useless.
+
+- **Incomplete**: Contracts missing important clauses. Example: postcondition says `has_item: items.has (a_item)` but doesn't specify frame conditions—what *didn't* change. MML addresses this by providing vocabulary (MML_SET, MML_SEQUENCE) to express both effects and preservation: `others_preserved: items.remove (a_item) |=| old items`.
+
+The runtime can only check what the contract specifies. Garbage in, garbage out.
 
 ---
 
