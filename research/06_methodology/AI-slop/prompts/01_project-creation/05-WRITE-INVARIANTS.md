@@ -25,27 +25,6 @@ invariant
 end
 
 INVARIANT CATEGORIES - check each:
-
-═══════════════════════════════════════════════════════════════
-MODEL-BASED INVARIANTS (if class has model query)
-═══════════════════════════════════════════════════════════════
-
-6. MODEL CONSISTENCY
-   - model_count_sync: model.count = count
-   - model_contains_all: model.for_all (agent has)
-   - model_order_preserved: -- for sequences
-
-Example:
-```eiffel
-invariant
-    model_count_consistent: model.count = count
-    model_reflects_storage: model |=| create_model_from_storage
-```
-
-═══════════════════════════════════════════════════════════════
-PRIMITIVE INVARIANTS
-═══════════════════════════════════════════════════════════════
-
 1. ATTRIBUTE VALIDITY
    - count_non_negative: count >= 0
    - capacity_sufficient: count <= capacity
@@ -72,7 +51,6 @@ RULES:
 - If invariant references 'old', it's wrong (use postconditions)
 - Start minimal, add as bugs reveal missing invariants
 - Tag names should read as assertions: "count_non_negative" NOT "check_count"
-- **If class has model query, add model consistency invariant**
 ```
 
 ## Success Criteria

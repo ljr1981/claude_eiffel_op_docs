@@ -103,41 +103,6 @@ Missing invariants (inferred from usage):
   - {attribute} should be: {inferred constraint}
 
 ═══════════════════════════════════════════════════════════════
-MODEL SPECIFICATION
-What abstract mathematical structure represents this class?
-═══════════════════════════════════════════════════════════════
-
-MODEL ANALYSIS:
-  Data structure: [SEQUENCE | SET | BAG | MAP | RELATION | INTERVAL | NONE]
-
-  If container/collection class:
-    Element type: {G}
-    Order matters: [YES → MML_SEQUENCE | NO]
-    Duplicates allowed: [YES → MML_BAG | NO → MML_SET]
-    Key-value pairs: [YES → MML_MAP]
-    Multi-valued keys: [YES → MML_RELATION]
-
-  Recommended model query:
-    model: MML_{TYPE} [{PARAMS}]
-      -- Abstract state as mathematical model
-
-  Existing model query: [YES: {name} | NO: Consider adding]
-
-  Contracts that could use model:
-    - {feature}: postcondition could be model-based
-    - {feature}: invariant could reference model
-
-MODEL TYPE DECISION TABLE:
-| Class Pattern | Model Type | Example |
-|---------------|------------|---------|
-| Ordered list | MML_SEQUENCE [G] | Stack, Queue, List |
-| Unique items | MML_SET [G] | Tags, IDs, Registry |
-| Counted items | MML_BAG [G] | Inventory, Word counts |
-| Key-value | MML_MAP [K, V] | Dictionary, Cache |
-| Multi-valued | MML_RELATION [K, V] | Graph edges, Permissions |
-| Integer range | MML_INTERVAL | Indices, Bounds |
-
-═══════════════════════════════════════════════════════════════
 DEPENDENCY SPECIFICATION
 What does this class depend on?
 ═══════════════════════════════════════════════════════════════

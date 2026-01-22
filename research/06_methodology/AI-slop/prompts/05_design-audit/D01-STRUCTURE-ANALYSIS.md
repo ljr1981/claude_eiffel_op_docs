@@ -172,39 +172,6 @@ CLASS: {name}
 POTENTIAL RESPONSIBILITY ISSUES:
   Classes with > 2 apparent responsibilities: {list}
 
-═══════════════════════════════════════════════════════════════
-MODEL-BASED CONTRACT COVERAGE
-Are contracts complete specifications?
-═══════════════════════════════════════════════════════════════
-
-For container/collection classes, check model coverage:
-
-MODEL COVERAGE AUDIT:
-| Class | Has Model Query | Model Type | Postconditions Model-Based | Invariants Model-Based |
-|-------|-----------------|------------|---------------------------|------------------------|
-| {class} | YES/NO | MML_{TYPE} | YES/NO | YES/NO |
-
-PRIMITIVE vs MODEL-BASED CONTRACTS:
-| Primitive (Incomplete) | Model-Based (Complete) |
-|------------------------|------------------------|
-| count = old count + 1  | model |=| old model & x |
-| has (x)                | model.has (x)          |
-| is_empty               | model.is_empty         |
-
-MODEL COVERAGE GAPS:
-  {class}.{feature}: Uses primitive postcondition, could be model-based
-    CURRENT: ensure count = old count + 1
-    UPGRADE: ensure model |=| old model & x
-
-CLASSES NEEDING MODELS:
-  - {class}: Container pattern, no model query
-    Recommended: model: MML_{TYPE} [{PARAMS}]
-
-MODEL COVERAGE SCORE:
-  Classes with model queries: {X}/{Y} ({percent}%)
-  Model-based postconditions: {X}/{Y} ({percent}%)
-  Model-based invariants: {X}/{Y} ({percent}%)
-
 OUTPUT FORMAT:
 
 # STRUCTURE ANALYSIS: {library_name}

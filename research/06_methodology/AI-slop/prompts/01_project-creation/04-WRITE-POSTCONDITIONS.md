@@ -26,31 +26,6 @@ feature_name (arg: TYPE): RESULT_TYPE
     end
 
 POSTCONDITION CATEGORIES - check each:
-
-═══════════════════════════════════════════════════════════════
-MODEL-BASED POSTCONDITIONS (PREFERRED - complete specification)
-═══════════════════════════════════════════════════════════════
-
-If class has a model query, use MODEL-BASED postconditions:
-
-For COMMANDS that modify state:
-   - model_extended: model |=| old model & x        -- append
-   - model_reduced: model |=| old model / x         -- remove one
-   - model_cleared: model.is_empty                  -- clear all
-   - model_updated: model |=| old model.replaced_at (i, x)
-
-For QUERIES that access state:
-   - model_consistent: Result = model [i]           -- indexed access
-   - model_contains: Result = model.has (x)         -- membership
-   - model_count: Result = model.count              -- size
-
-WHY MODEL-BASED: "model |=| old model & x" specifies the COMPLETE
-transformation. Primitive "count = old count + 1" only checks ONE property.
-
-═══════════════════════════════════════════════════════════════
-PRIMITIVE POSTCONDITIONS (use when no model applies)
-═══════════════════════════════════════════════════════════════
-
 1. RESULT CONDITIONS (for queries)
    - result_valid: Result >= 0
    - result_consistent: Result = some_query
@@ -70,13 +45,11 @@ PRIMITIVE POSTCONDITIONS (use when no model applies)
    - contains_input: has_substring (arg)
 
 RULES:
-- **PREFER model-based postconditions when class has model query**
 - Use 'old' keyword for before-values
 - Use 'Result' for return value
-- Use '|=|' for model equality comparison
-- Queries: focus on Result properties OR model consistency
-- Commands: focus on model transformation OR state changes
-- Be specific: "model |=| old model & x" NOT "model changed"
+- Queries: focus on Result properties
+- Commands: focus on state changes
+- Be specific: "count = old count + 1" NOT "count changed"
 - Every postcondition MUST be verifiable
 ```
 
