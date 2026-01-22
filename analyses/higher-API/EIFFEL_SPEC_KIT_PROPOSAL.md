@@ -8,21 +8,75 @@
 
 ## 1. Executive Summary
 
+**The enemy is drift.** Both AI and human gradually move away from intended practice—and most methodologies lose to drift. This proposal attempts to slow drift through automation.
+
 This proposal outlines a hybrid methodology combining:
 - GitHub Spec Kit's UX patterns (phases, slash commands, directory conventions)
 - The Anti-Slop Workflow's verification rigor (compilation gates, evidence requirements)
 - Eiffel's Design by Contract as the specification mechanism
+- **Progressive AI review chains** that run automatically (the primary anti-drift mechanism)
 
-The result is a workflow where specifications are machine-checkable contracts, not markdown documents interpreted by AI.
+The result is a workflow where specifications are machine-checkable contracts, with automated review that runs even when humans forget.
 
 **The honest caveat:** This is an experiment, not a proven solution. The companion Strategic Analysis document reveals that:
-- The existing Anti-Slop methodology has not been consistently followed
+- The existing Anti-Slop methodology has not been consistently followed (drift won)
 - Methodologies evolve unevenly and can fail entirely (simple_code)
 - AI will forget, ignore, drop, hallucinate, and seize control regardless of workflow
 - The human enforcement layer is unreliable—humans forget, get tired, and take shortcuts
 - Adding more phases may just create more phases to skip
 
-This proposal may produce the same outcome as previous methodology attempts: initial enthusiasm followed by gradual abandonment as the overhead becomes burdensome. We document it anyway because the alternative—no methodology—has demonstrably failed.
+This proposal may produce the same outcome as previous methodology attempts: initial enthusiasm followed by gradual abandonment (drift). We document it anyway because the alternative—no methodology—has demonstrably failed, and because automation offers a new variable: anti-drift mechanisms that don't rely on human memory.
+
+---
+
+## 1.5 The Real Enemy: Drift
+
+Before examining methodologies, we must name the real enemy: **drift**.
+
+Drift is the gradual, often imperceptible movement away from intended practice. Both AI and human drift, but for different reasons:
+
+**AI Drift:**
+| Behavior | What Happens | Why It Happens |
+|----------|--------------|----------------|
+| Forget | Loses context across sessions, after compression | Limited context window, no persistent memory |
+| Ignore | Skips steps that feel redundant | Optimization bias, eager to show progress |
+| Drop | Abandons partially-complete work | New input overwrites current focus |
+| Hallucinate | Invents plausible-sounding but false information | Pattern matching without ground truth |
+| Seize control | Expands scope without permission | "Helpful" instincts, Ensign Eager syndrome |
+
+**Human Drift:**
+| Behavior | What Happens | Why It Happens |
+|----------|--------------|----------------|
+| Fatigue | Stops reviewing AI output carefully | Hours of interaction exhaust attention |
+| Expedience | Approves shortcuts to see progress | "Good enough" feels better than "not done" |
+| Trust erosion | Stops enforcing gates after repeated success | "It always works, skip the check" |
+| Context loss | Forgets why a rule exists | Time passes, original rationale fades |
+| Surrender | Lets AI drive because fighting is exhausting | Cognitive load of constant correction |
+
+**The drift dynamic:** AI drifts toward more output. Human drifts toward less oversight. These drifts compound: the AI produces more unchecked work, the human reviews less of it, quality degrades, but nobody notices until something breaks.
+
+**Why methodologies fail:** Every methodology is an anti-drift mechanism. Gates, checklists, evidence requirements—all exist to counteract drift. But drift also affects the methodology itself:
+- Day 1: Follow all phases carefully
+- Day 10: Skip the "obvious" phases
+- Day 30: "What phases?"
+
+The methodology drifts from "how we work" to "how we worked" to "that thing we tried."
+
+**This proposal's approach to drift:**
+
+1. **Acknowledge it's inevitable.** Drift will happen. The question is detection and correction, not prevention.
+
+2. **Automate anti-drift mechanisms.** The progressive AI review chain runs automatically. You can't skip what runs without your intervention.
+
+3. **Make drift visible.** Evidence files create an audit trail. When drift happens, the trail shows where.
+
+4. **Reduce human cognitive load.** The AI chain does heavy lifting. Human reviews synopsis, not raw output. Less fatigue = less drift.
+
+5. **Accept partial success.** If only 60% of phases are followed, that's better than 0%. Perfect compliance is not the goal; sustainable compliance is.
+
+**The honest assessment:** These approaches reduce drift. They don't eliminate it. Drift is entropy—it requires constant energy to counteract. The methodology provides that energy. When the energy runs out (human exhaustion, AI context loss), drift wins. The best we can do is extend the time before drift wins and make recovery easier when it does.
+
+Every section that follows should be read through this lens: "How does this help counteract drift, and where will drift eventually defeat it?"
 
 ---
 
@@ -77,7 +131,7 @@ The existing Simple Eiffel methodology consists of 12 workflows with explicit ve
 - Task decomposition embedded in steps, not explicit
 - No slash command interface
 
-**The uncomfortable truth:** These weaknesses are not the real problem. The Anti-Slop workflows exist and are documented. The problem is that they weren't consistently followed during the 114-library buildout. The human got tired. The AI got eager. Volume overwhelmed process. Adding a slash command interface won't fix human fatigue.
+**The uncomfortable truth:** These weaknesses are not the real problem. The Anti-Slop workflows exist and are documented. The problem is that they weren't consistently followed during the 114-library buildout. This is drift in action: human fatigue + AI eagerness + volume = methodology abandoned. Adding a slash command interface won't fix drift—it just changes the surface it happens on.
 
 ### 2.3 The Opportunity (Qualified)
 
@@ -90,7 +144,7 @@ Eiffel DbC:   Contract → Compiler Checks → Code → Runtime Checks → Tests
 
 The gap is UX, not capability. Eiffel has superior verification but inferior workflow ergonomics.
 
-**But:** Better ergonomics won't guarantee compliance. The Anti-Slop methodology had clear steps. They were skipped anyway. The question is whether slash commands and directory conventions create enough friction reduction to change behavior. The honest answer: probably not enough on their own.
+**But:** Better ergonomics won't guarantee compliance. The Anti-Slop methodology had clear steps. They were skipped anyway—drift won. The question is whether slash commands and directory conventions create enough friction reduction to slow drift. The honest answer: probably not enough on their own. That's why this proposal adds automated review chains that run without human initiation. Automation is the only reliable anti-drift mechanism.
 
 ---
 
@@ -880,11 +934,16 @@ Spec Kit claims: *"Specifications become executable, directly generating working
 
 Spec Kit claims: *"The shift moves from code is the source of truth to intent is the source of truth."*
 
-**Problem:** Intent in markdown can drift from implementation.
+**Problem:** Intent in markdown can drift from implementation. (See Section 1.5: drift is the real enemy.)
 
 **Eiffel Spec Kit solution:** Intent is captured in contracts. Contracts are compiled code. Drift is detected by contract violations.
 
-**The honest truth:** Intent in intent.md can drift from contracts. Contracts can drift from implementation (if modified during Phase 4). The drift still happens—it's just detected at different points. Detection is valuable, but it's not prevention.
+**The honest truth:** Drift happens at every layer:
+- Intent.md drifts from what user actually wants (human context loss)
+- Contracts drift from intent.md (AI interpretation drift)
+- Implementation drifts from contracts (modified during Phase 4 despite rules)
+
+The Eiffel approach doesn't prevent drift—it detects it at more checkpoints. Contract violations are drift detection alarms. The automated AI chain catches drift earlier (during review, not runtime). Detection is valuable, but it's not prevention. Drift always finds a way.
 
 ---
 
@@ -897,7 +956,7 @@ Spec Kit claims: *"The shift moves from code is the source of truth to intent is
 3. Create tasks.md template
 4. Define evidence file formats
 
-**Risk:** Documentation gets written but not read. The 12-workflow Anti-Slop methodology is documented. It wasn't consistently followed.
+**Drift risk:** Documentation gets written but not read. The 12-workflow Anti-Slop methodology is documented. It wasn't consistently followed. Documentation doesn't prevent drift; it just documents what we drifted from.
 
 ### Phase 2: Create Slash Command Skill
 
@@ -906,7 +965,7 @@ Spec Kit claims: *"The shift moves from code is the source of truth to intent is
 3. Implement remaining commands
 4. Add `/eiffel.status` for progress tracking
 
-**Risk:** Skills get created but fall out of use. Initial enthusiasm fades. The slash command becomes one more thing to remember.
+**Drift risk:** Skills get created but fall out of use. Initial enthusiasm fades. This is classic drift: Day 1 excitement → Day 30 abandonment. The slash command becomes one more thing to remember, then forget.
 
 ### Phase 3: Tooling Integration
 
@@ -914,7 +973,9 @@ Spec Kit claims: *"The shift moves from code is the source of truth to intent is
 2. Add evidence file generation
 3. Integrate with simple_oracle for session handoff
 
-**Risk:** Tooling becomes stale as requirements evolve. Nobody maintains it. The initializer creates files that become clutter.
+**Drift risk:** Tooling becomes stale as requirements evolve. Tooling drift: the tool was built for the process, the process evolved, the tool didn't. The initializer creates files that become clutter.
+
+**Anti-drift:** This is where automation helps. The AI review chain runs automatically. Even if the human forgets to invoke it, the slash command prompt forces execution.
 
 ### Phase 4: Validation
 
@@ -923,19 +984,23 @@ Spec Kit claims: *"The shift moves from code is the source of truth to intent is
 3. Document friction points
 4. Iterate on workflow
 
-**Risk:** Validation reveals that the workflow is too heavy for routine work. It gets used for "important" projects and skipped for everything else. Eventually, nothing feels important enough.
+**Drift risk:** Validation reveals that the workflow is too heavy for routine work. Selective drift: methodology used for "important" projects, skipped for "quick" ones. Eventually, nothing feels important enough to warrant the overhead.
 
 ---
 
 ## 7. Risk Assessment
 
-| Risk | Mitigation | Honest Assessment |
-|------|------------|-------------------|
-| Overhead too high | Phase 0 and 2 are lightweight | Phase 2 (adversarial review) is not lightweight. It requires context-switching to another AI. |
-| AI ignores gates | Gates are enforced by human review of evidence files | Humans don't always review evidence files. Evidence becomes pro-forma. |
-| Contracts too verbose | Start with key features, expand coverage iteratively | "Iteratively" often means "never." The first pass becomes the final pass. |
-| Tooling not ready | Manual execution first, automate later | "Automate later" is tech debt that never gets paid. Manual stays manual. |
-| Methodology abandoned | ??? | This is the real risk. No mitigation identified. |
+All risks below are drift in disguise:
+
+| Risk | Mitigation | Drift Pattern |
+|------|------------|---------------|
+| Overhead too high | Automated AI chain reduces manual work | Human expedience drift: "too heavy, skip it" |
+| AI ignores gates | Slash commands force CLI execution | AI eagerness drift: "I'll just do the next thing" |
+| Contracts too verbose | Start with key features, expand iteratively | Completion drift: first pass becomes final pass |
+| Tooling not ready | Manual first, automate later | Procrastination drift: "later" means "never" |
+| **Methodology abandoned** | **Automation + low cognitive load** | **This is drift winning. The real battle.** |
+
+**Updated mitigation for "Methodology abandoned":** The progressive AI review chain is the primary anti-drift mechanism. It runs automatically (can't be forgotten), produces evidence (drift becomes visible), and reduces human cognitive load (less fatigue = slower drift). This doesn't prevent abandonment, but it extends time-to-abandon and makes recovery easier.
 
 ---
 
@@ -948,33 +1013,41 @@ Spec Kit claims: *"The shift moves from code is the source of truth to intent is
 | Evidence compliance | 100% of gates have evidence files | Files can exist without being reviewed. Compliance ≠ verification. |
 | Defect escape rate | 0 defects found post-Phase 6 | Unrealistic. Defects will escape. The question is severity and frequency. |
 
-**A more honest metric set:**
+**A more honest metric set (drift-aware):**
 
-| Metric | Target | Why This Matters |
+| Metric | Target | What It Measures |
 |--------|--------|------------------|
-| Phases actually followed | Track which phases get skipped | Reveals where the workflow breaks down |
-| Time to abandon | Measure how long methodology is followed before shortcuts begin | Predicts sustainability |
-| Defects caught by phase | Which phase catches the most bugs | Identifies high-value phases to prioritize |
-| Human frustration incidents | Count "STOP!" moments documented in Strategic Analysis | Measures AI controllability |
+| Phases actually followed | Track which phases get skipped | **Drift location:** where does the workflow break down? |
+| Time to abandon | Days before shortcuts begin | **Drift velocity:** how fast does compliance decay? |
+| Defects caught by phase | Which phase catches the most bugs | **Anti-drift value:** which phases justify their overhead? |
+| Human frustration incidents | Count "STOP!" moments | **Drift trigger:** what causes human surrender? |
+| Evidence files generated vs reviewed | Ratio of files to human reviews | **Rubber-stamp rate:** is evidence theater or verification? |
 
 ---
 
 ## 9. Conclusion
 
-GitHub Spec Kit addresses a real problem: vibe coding produces unreliable software. Their solution (markdown specs interpreted by AI) is appropriate for languages without contract mechanisms.
+**The enemy is drift.** Both AI and human drift away from intended practice—AI through forgetting, ignoring, dropping, hallucinating, and seizing control; human through fatigue, expedience, trust erosion, context loss, and surrender. Every methodology is an attempt to counteract drift. Most methodologies lose.
 
-Eiffel has contracts. The appropriate solution for Eiffel is:
-1. Adopt Spec Kit's UX patterns (phases, commands, directories)
-2. Keep Anti-Slop's verification rigor (gates, evidence)
-3. Use contracts as the specification mechanism (not markdown)
+GitHub Spec Kit addresses drift with markdown specs and AI interpretation—appropriate for languages without contract mechanisms, but fundamentally hope-based.
 
-The result: specifications that are machine-checkable, not hope-based.
+Eiffel has a better answer: contracts. The appropriate solution for Eiffel is:
+1. Adopt Spec Kit's UX patterns (phases, commands, directories) — reduces friction
+2. Keep Anti-Slop's verification rigor (gates, evidence) — makes drift visible
+3. Use contracts as the specification mechanism — machine-checkable, not hope-based
+4. **Add automated AI review chains** — runs without human initiation, can't be skipped
 
-**The honest conclusion:** This methodology is better than nothing. It is not a solution. The problems identified in the Strategic Analysis—AI behavior (forget, ignore, drop, hallucinate, seize control), human fatigue, methodology drift, no stable ground—will persist. The methodology provides structure for good days. It does not prevent bad days.
+The result: specifications that are machine-checkable, with automated anti-drift mechanisms that run even when humans forget.
 
-The bet is the same as with "Proven Eiffel": either the methodology drives the discipline required to justify it, or it will be abandoned when the gap between aspiration and practice becomes too painful. Either outcome teaches something.
+**The honest conclusion:** This methodology is better than nothing. It is not a cure for drift—nothing is. Drift is entropy; it requires constant energy to counteract. The methodology provides that energy through automation:
+- The AI chain runs automatically (doesn't rely on human memory)
+- Evidence files are generated (drift becomes visible in the audit trail)
+- Human cognitive load is reduced (less fatigue = slower drift)
+- Synopsis replaces raw output (sustainable review = longer engagement)
 
-What we cannot do is pretend that documenting a workflow solves the fundamental tension between AI capability and AI reliability. It doesn't. The workflow is a coping mechanism, not a cure.
+The bet: automation extends time-to-drift-failure and makes recovery easier when drift wins. Either the methodology survives long enough to justify "Proven Eiffel," or it will be abandoned—but the evidence of what was tried will inform the next attempt.
+
+What we cannot do is pretend that documenting a workflow defeats drift. It doesn't. Drift always wins eventually. The question is: can we extend "eventually" long enough to ship quality software? That's the experiment.
 
 ---
 
@@ -1063,21 +1136,21 @@ ALL TESTS PASSED
 
 ---
 
-## Appendix D: Why Document This If It Might Fail?
+## Appendix D: Why Document This If Drift Will Win?
 
-The Strategic Analysis documents a verification crisis. This proposal documents a response to that crisis. The response may not work. Why write it anyway?
+Section 1.5 establishes that drift is the real enemy and that drift always wins eventually. This proposal documents a response to drift. The response will eventually lose. Why write it anyway?
 
-1. **Explicit failure is better than implicit failure.** If the methodology is documented and abandoned, we know what was tried. If there's no methodology, we don't know what we're failing to do.
+1. **Explicit drift is better than invisible drift.** If the methodology is documented and we drift from it, we know what we drifted from. Without documentation, we don't know what we're failing to do—we just fail.
 
-2. **Structure enables measurement.** With defined phases, we can track which phases get skipped. Without phases, we can't identify where the process breaks down.
+2. **Structure enables drift measurement.** With defined phases, we can track which phases get skipped first, how fast compliance decays, and where drift begins. Without phases, drift is invisible until something breaks.
 
-3. **The alternative is worse.** Vibe coding with Eiffel still produces unreliable software. Contracts help, but contracts alone don't enforce process. Some structure is better than no structure.
+3. **Slowing drift is valuable even if you can't stop it.** Vibe coding with Eiffel still produces unreliable software. Contracts help, but contracts alone don't enforce process. The automated AI chain slows drift. Slowing drift means more time to ship quality software before drift wins.
 
-4. **Future iterations need a baseline.** This proposal may be version 1.0 that gets replaced by version 2.0. But version 2.0 needs something to improve upon.
+4. **Recovery from drift needs a target.** When drift wins and we want to recover, we need a defined state to recover to. This proposal is that target. Version 2.0 will build on what version 1.0 learned about drift.
 
-5. **Honesty is itself valuable.** A proposal that acknowledges its limitations is more useful than one that pretends to solve problems it can't solve. The limitations documented here are the starting point for future work.
+5. **Honesty about drift is itself valuable.** A proposal that names drift as the enemy and acknowledges it will win is more useful than one that pretends to solve problems it can't solve. The drift patterns documented here are data for future anti-drift research.
 
-The methodology may fail. The documentation of that failure will be useful. That's the bet.
+The methodology will eventually lose to drift. The documentation of how it lost—which phases drifted first, what triggered human surrender, where automation wasn't enough—will inform the next attempt. That's the bet.
 
 ---
 
