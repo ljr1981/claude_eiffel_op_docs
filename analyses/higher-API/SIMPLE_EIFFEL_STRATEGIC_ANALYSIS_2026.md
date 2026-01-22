@@ -95,6 +95,25 @@ The new scarcity is not code generation but verification:
 
 **Key skill change:** "The ability to write clear, unambiguous specifications becomes the primary skill set."
 
+**The uncomfortable reality:** This framing assumes AI will faithfully execute specifications. It won't. The developer must also become an **AI shepherd**, hand-holding the AI through the development cycle because AI is prone to both forgetting and hallucination.
+
+This shepherding requirement is a **destroyer of clear, unambiguous specifications**. Why? Because no matter how clear and unambiguous a specification is, the AI will:
+
+1. **Forget** - Context windows compress, sessions end, prior decisions vanish
+2. **Ignore** - Instructions that don't fit the immediate task get silently dropped
+3. **Drop** - Multi-step processes lose steps; the AI "moves on" before completing
+4. **Hallucinate** - Confident assertions about code behavior that was never verified
+
+The specification-driven development pitch assumes a reliable executor. Current AI is not that executor. The human must constantly verify that the AI is still following the specification, hasn't drifted, hasn't invented requirements, and hasn't declared victory prematurely.
+
+This creates a paradox: the more comprehensive the specification, the more likely the AI is to lose parts of it during execution. The developer ends up repeating, reminding, and redirecting—work that wouldn't be necessary with a human developer who could read and remember a document.
+
+**The actual skill set:**
+1. Writing clear specifications (the advertised skill)
+2. Breaking specifications into AI-digestible chunks (the unadvertised skill)
+3. Detecting when AI has drifted from specification (the exhausting skill)
+4. Rebuilding AI context when sessions compress or restart (the Sisyphean skill)
+
 ---
 
 ## Part 2b: The Verification Crisis - A Personal Reckoning
